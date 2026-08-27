@@ -1,0 +1,9 @@
+import bcrypt from "bcryptjs";
+
+const SALT_ROUNDS = 10;
+
+export const hashPassword = (plainPassword) =>
+  bcrypt.hash(plainPassword, SALT_ROUNDS);
+
+export const comparePassword = (plainPassword, passwordHash) =>
+  bcrypt.compare(plainPassword, passwordHash);
