@@ -81,6 +81,21 @@ test("warehouse manager can read and update warehouses", () => {
   );
 });
 
+test("pharmacy manager can read and update pharmacies", () => {
+  assert.equal(
+    hasPermission(ROLES.PHARMACY_MANAGER, PERMISSIONS.PHARMACIES_READ),
+    true,
+  );
+  assert.equal(
+    hasPermission(ROLES.PHARMACY_MANAGER, PERMISSIONS.PHARMACIES_UPDATE),
+    true,
+  );
+  assert.equal(
+    hasPermission(ROLES.PHARMACY_MANAGER, PERMISSIONS.PHARMACIES_CREATE),
+    false,
+  );
+});
+
 test("resource scope blocks pharmacies outside the user links", () => {
   const user = {
     role: ROLES.PHARMACY_ADMIN,

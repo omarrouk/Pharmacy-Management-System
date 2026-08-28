@@ -6,6 +6,7 @@ import { getDatabaseHealth } from "./config/database.js";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
 import authRoutes from "./modules/auth/routes/auth.routes.js";
 import userRoutes from "./modules/user/routes/user.routes.js";
+import pharmacyRoutes from "./modules/pharmacy/routes/pharmacy.routes.js";
 import warehouseRoutes from "./modules/warehouse/routes/warehouse.routes.js";
 
 export const createApp = () => {
@@ -37,6 +38,7 @@ export const createApp = () => {
   app.use("/api/v1/auth", authRoutes);
   app.use("/api/v1/users", userRoutes);
   app.use("/api/v1/warehouses", warehouseRoutes);
+  app.use("/api/v1/pharmacies", pharmacyRoutes);
 
   app.use(notFoundHandler);
 
