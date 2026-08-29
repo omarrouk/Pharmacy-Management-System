@@ -4,9 +4,13 @@ import express from "express";
 import helmet from "helmet";
 import { getDatabaseHealth } from "./config/database.js";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
+import activeIngredientRoutes from "./modules/activeIngredient/routes/activeIngredient.routes.js";
 import authRoutes from "./modules/auth/routes/auth.routes.js";
-import userRoutes from "./modules/user/routes/user.routes.js";
+import categoryRoutes from "./modules/category/routes/category.routes.js";
+import drugRoutes from "./modules/drug/routes/drug.routes.js";
+import manufacturerRoutes from "./modules/manufacturer/routes/manufacturer.routes.js";
 import pharmacyRoutes from "./modules/pharmacy/routes/pharmacy.routes.js";
+import userRoutes from "./modules/user/routes/user.routes.js";
 import warehouseRoutes from "./modules/warehouse/routes/warehouse.routes.js";
 
 export const createApp = () => {
@@ -39,6 +43,10 @@ export const createApp = () => {
   app.use("/api/v1/users", userRoutes);
   app.use("/api/v1/warehouses", warehouseRoutes);
   app.use("/api/v1/pharmacies", pharmacyRoutes);
+  app.use("/api/v1/categories", categoryRoutes);
+  app.use("/api/v1/manufacturers", manufacturerRoutes);
+  app.use("/api/v1/active-ingredients", activeIngredientRoutes);
+  app.use("/api/v1/drugs", drugRoutes);
 
   app.use(notFoundHandler);
 

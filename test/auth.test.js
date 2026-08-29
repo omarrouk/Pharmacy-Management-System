@@ -21,7 +21,10 @@ test("system admin has all current permissions", () => {
 });
 
 test("pharmacist cannot manage users", () => {
-  assert.deepEqual(getPermissionsForRole(ROLES.PHARMACIST), []);
+  assert.deepEqual(getPermissionsForRole(ROLES.PHARMACIST), [
+    PERMISSIONS.ACTIVE_INGREDIENTS_READ,
+    PERMISSIONS.DRUGS_READ,
+  ]);
   assert.equal(hasPermission(ROLES.PHARMACIST, PERMISSIONS.USERS_CREATE), false);
 });
 
@@ -93,6 +96,26 @@ test("pharmacy manager can read and update pharmacies", () => {
   assert.equal(
     hasPermission(ROLES.PHARMACY_MANAGER, PERMISSIONS.PHARMACIES_CREATE),
     false,
+  );
+});
+
+test("pharmacist can read drugs for alternative search", () => {
+  assert.equal(hasPermission(ROLES.PHARMACIST, PERMISSIONS.DRUGS_READ), true);
+  assert.equal(
+    hasPermission(ROLES.PHARMACIST, PERMISSIONS.ACTIVE_INGREDIENTS_READ),
+    true,
+  );
+  assert.equal(hasPermission(ROLES.PHARMACIST, PERMISSIONS.DRUGS_CREATE), false);
+});
+
+test("pharmacy admin can manage catalog", () => {
+  assert.equal(
+    hasPermission(ROLES.PHARMACY_ADMIN, PERMISSIONS.DRUGS_CREATE),
+    true,
+  );
+  assert.equal(
+    hasPermission(ROLES.PHARMACY_ADMIN, PERMISSIONS.CATEGORIES_CREATE),
+    true,
   );
 });
 
