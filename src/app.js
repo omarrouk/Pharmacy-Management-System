@@ -8,6 +8,9 @@ import activeIngredientRoutes from "./modules/activeIngredient/routes/activeIngr
 import authRoutes from "./modules/auth/routes/auth.routes.js";
 import categoryRoutes from "./modules/category/routes/category.routes.js";
 import drugRoutes from "./modules/drug/routes/drug.routes.js";
+import batchRoutes from "./modules/batch/routes/batch.routes.js";
+import inventoryRoutes from "./modules/inventory/routes/inventory.routes.js";
+import stockMovementRoutes from "./modules/stockMovement/routes/stockMovement.routes.js";
 import manufacturerRoutes from "./modules/manufacturer/routes/manufacturer.routes.js";
 import pharmacyRoutes from "./modules/pharmacy/routes/pharmacy.routes.js";
 import userRoutes from "./modules/user/routes/user.routes.js";
@@ -47,6 +50,9 @@ export const createApp = () => {
   app.use("/api/v1/manufacturers", manufacturerRoutes);
   app.use("/api/v1/active-ingredients", activeIngredientRoutes);
   app.use("/api/v1/drugs", drugRoutes);
+  app.use("/api/v1/batches", batchRoutes);
+  app.use("/api/v1/inventory", inventoryRoutes);
+  app.use("/api/v1/stock-movements", stockMovementRoutes);
 
   app.use(notFoundHandler);
 

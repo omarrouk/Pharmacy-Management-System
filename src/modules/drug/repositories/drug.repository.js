@@ -4,6 +4,9 @@ export const createDrug = (data) => Drug.create(data);
 
 export const findDrugById = (id) => Drug.findById(id);
 
+export const findDrugsByIds = (ids) =>
+  ids.length ? Drug.find({ _id: { $in: ids } }).select("name") : [];
+
 export const findDrugByBarcode = (barcode) => Drug.findOne({ barcode });
 
 export const listDrugs = ({ filter = {}, skip = 0, limit = 20 } = {}) =>

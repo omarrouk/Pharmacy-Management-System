@@ -4,6 +4,9 @@ export const createWarehouse = (data) => Warehouse.create(data);
 
 export const findWarehouseById = (id) => Warehouse.findById(id);
 
+export const findWarehousesByIds = (ids) =>
+  ids.length ? Warehouse.find({ _id: { $in: ids } }).select("name code") : [];
+
 export const findWarehouseByCode = (code) =>
   Warehouse.findOne({ code: code.toUpperCase() });
 

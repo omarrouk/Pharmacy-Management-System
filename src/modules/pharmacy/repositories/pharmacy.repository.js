@@ -4,6 +4,9 @@ export const createPharmacy = (data) => Pharmacy.create(data);
 
 export const findPharmacyById = (id) => Pharmacy.findById(id);
 
+export const findPharmaciesByIds = (ids) =>
+  ids.length ? Pharmacy.find({ _id: { $in: ids } }).select("name code") : [];
+
 export const findPharmacyByCode = (code) =>
   Pharmacy.findOne({ code: code.toUpperCase() });
 

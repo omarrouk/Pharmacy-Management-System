@@ -24,8 +24,15 @@ test("pharmacist cannot manage users", () => {
   assert.deepEqual(getPermissionsForRole(ROLES.PHARMACIST), [
     PERMISSIONS.ACTIVE_INGREDIENTS_READ,
     PERMISSIONS.DRUGS_READ,
+    PERMISSIONS.BATCHES_READ,
+    PERMISSIONS.INVENTORY_READ,
+    PERMISSIONS.STOCK_MOVEMENTS_READ,
   ]);
   assert.equal(hasPermission(ROLES.PHARMACIST, PERMISSIONS.USERS_CREATE), false);
+  assert.equal(
+    hasPermission(ROLES.PHARMACIST, PERMISSIONS.STOCK_MOVEMENTS_CREATE),
+    false,
+  );
 });
 
 test("authorize rejects missing permission", () => {
@@ -81,6 +88,18 @@ test("warehouse manager can read and update warehouses", () => {
   assert.equal(
     hasPermission(ROLES.WAREHOUSE_MANAGER, PERMISSIONS.WAREHOUSES_DEACTIVATE),
     false,
+  );
+  assert.equal(
+    hasPermission(ROLES.WAREHOUSE_MANAGER, PERMISSIONS.BATCHES_CREATE),
+    true,
+  );
+  assert.equal(
+    hasPermission(ROLES.WAREHOUSE_MANAGER, PERMISSIONS.BATCHES_DEACTIVATE),
+    false,
+  );
+  assert.equal(
+    hasPermission(ROLES.WAREHOUSE_MANAGER, PERMISSIONS.STOCK_MOVEMENTS_CREATE),
+    true,
   );
 });
 
