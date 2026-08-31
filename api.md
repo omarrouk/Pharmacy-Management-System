@@ -495,3 +495,191 @@ GET /api/v1/stock-movements/6a9550aa11bb22cc33dd44ee
 
 - **Read** inventory + movements: all operational roles
 - **Create** movements: System Admin, Pharmacy Admin, Pharmacy Manager, Warehouse Manager
+
+---
+
+## Supply requests and shipments
+
+**Workflow:** request → approve → create shipment → send (stock out) → receive (stock in)
+
+Approval does **not** change inventory. Stock moves only on **send** and **receive**.
+
+### Supply requests
+
+Use these names in Postman (folder: **Supply Requests**):
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List supply requests | `GET` | `/api/v1/supply-requests` |
+| Get supply request by ID | `GET` | `/api/v1/supply-requests/REQUEST_ID` |
+| Request supply — pharmacy to warehouse | `POST` | `/api/v1/supply-requests/pharmacy` |
+| Request supply — warehouse to warehouse | `POST` | `/api/v1/supply-requests/warehouse` |
+| Approve supply request | `POST` | `/api/v1/supply-requests/REQUEST_ID/approve` |
+| Reject supply request | `POST` | `/api/v1/supply-requests/REQUEST_ID/reject` |
+| Cancel supply request | `POST` | `/api/v1/supply-requests/REQUEST_ID/cancel` |
+
+List filters: `?status=APPROVED` · `?requestType=PHARMACY_TO_WAREHOUSE`
+
+---
+
+**Request supply — pharmacy to warehouse**  
+Pharmacy asks its primary warehouse for stock.
+
+`POST /api/v1/supply-requests/pharmacy`
+
+```json
+{
+  "pharmacyId": "PHARMACY_ID",
+  "items": [
+    { "drugId": "DRUG_ID", "requestedQuantity": 50 }
+  ]
+}
+```
+
+---
+
+**Request supply — warehouse to warehouse**  
+One warehouse asks another warehouse for stock.
+
+`POST /api/v1/supply-requests/warehouse`
+
+```json
+{
+  "sourceWarehouseId": "SOURCE_WAREHOUSE_ID",
+  "destinationWarehouseId": "DEST_WAREHOUSE_ID",
+  "items": [
+    { "drugId": "DRUG_ID", "requestedQuantity": 100 }
+  ]
+}
+```
+
+---
+
+**Approve supply request**  
+Warehouse/source manager sets approved qty per drug. Inventory is **not** changed yet.
+
+`POST /api/v1/supply-requests/REQUEST_ID/approve`
+
+```json
+{
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "approvedQuantity": 50,
+      "itemReason": ""
+    }
+  ]
+}
+```
+
+Use `itemReason` when `approvedQuantity` is reduced or set to `0`.
+
+---
+
+**Reject supply request**
+
+`POST /api/v1/supply-requests/REQUEST_ID/reject`
+
+```json
+{
+  "rejectionReason": "Out of stock at warehouse"
+}
+```
+
+---
+
+**Cancel supply request**  
+Only while status is `PENDING_APPROVAL`.
+
+`POST /api/v1/supply-requests/REQUEST_ID/cancel`
+
+Statuses: `PENDING_APPROVAL` → `APPROVED` | `REJECTED` | `CANCELLED`
+
+---
+
+### Shipments
+
+Use these names in Postman (folder: **Shipments**):
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List shipments | `GET` | `/api/v1/shipments` |
+| Get shipment by ID | `GET` | `/api/v1/shipments/SHIPMENT_ID` |
+| Prepare shipment | `POST` | `/api/v1/shipments` |
+| Send shipment | `POST` | `/api/v1/shipments/SHIPMENT_ID/send` |
+| Receive shipment | `POST` | `/api/v1/shipments/SHIPMENT_ID/receive` |
+
+List filters: `?supplyRequestId=REQUEST_ID` · `?status=SENT`
+
+---
+
+**Prepare shipment**  
+From an approved supply request. Assign batches and sent quantities at source.
+
+`POST /api/v1/shipments`
+
+```json
+{
+  "supplyRequestId": "SUPPLY_REQUEST_ID",
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "batchId": "BATCH_ID",
+      "sentQuantity": 50
+    }
+  ]
+}
+```
+
+---
+
+**Send shipment**  
+Dispatches goods. Stock **out** at source (warehouse must have enough qty).
+
+`POST /api/v1/shipments/SHIPMENT_ID/send`
+
+---
+
+**Receive shipment**  
+Confirms arrival. Stock **in** at destination. Received qty can be less than sent.
+
+`POST /api/v1/shipments/SHIPMENT_ID/receive`
+
+```json
+{
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "batchId": "BATCH_ID",
+      "receivedQuantity": 45
+    }
+  ]
+}
+```
+
+Shortage is recorded automatically (`sentQuantity - receivedQuantity`).
+
+Shipment statuses: `PREPARED` → `SENT` → `PARTIALLY_RECEIVED` | `RECEIVED`
+
+---
+
+### Full test flow (Postman)
+
+| Step | Postman request name |
+|---|---|
+| 1 | Add stock at warehouse (`POST /stock-movements` — direction `in`) |
+| 2 | **Request supply — pharmacy to warehouse** |
+| 3 | **Approve supply request** |
+| 4 | **Prepare shipment** |
+| 5 | **Send shipment** → check warehouse inventory down |
+| 6 | **Receive shipment** → check pharmacy inventory up |
+
+List filters:
+- `GET /api/v1/supply-requests?status=APPROVED`
+- `GET /api/v1/shipments?supplyRequestId=REQUEST_ID`
+
+Permissions:
+- create/cancel requests: pharmacy & warehouse employees/managers
+- approve/reject: managers + pharmacy admin
+- create/send shipments: warehouse side
+- receive shipments: destination side (pharmacy or warehouse)

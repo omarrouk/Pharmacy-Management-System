@@ -11,6 +11,8 @@ import drugRoutes from "./modules/drug/routes/drug.routes.js";
 import batchRoutes from "./modules/batch/routes/batch.routes.js";
 import inventoryRoutes from "./modules/inventory/routes/inventory.routes.js";
 import stockMovementRoutes from "./modules/stockMovement/routes/stockMovement.routes.js";
+import supplyRequestRoutes from "./modules/supplyRequest/routes/supplyRequest.routes.js";
+import shipmentRoutes from "./modules/shipment/routes/shipment.routes.js";
 import manufacturerRoutes from "./modules/manufacturer/routes/manufacturer.routes.js";
 import pharmacyRoutes from "./modules/pharmacy/routes/pharmacy.routes.js";
 import userRoutes from "./modules/user/routes/user.routes.js";
@@ -53,6 +55,8 @@ export const createApp = () => {
   app.use("/api/v1/batches", batchRoutes);
   app.use("/api/v1/inventory", inventoryRoutes);
   app.use("/api/v1/stock-movements", stockMovementRoutes);
+  app.use("/api/v1/supply-requests", supplyRequestRoutes);
+  app.use("/api/v1/shipments", shipmentRoutes);
 
   app.use(notFoundHandler);
 

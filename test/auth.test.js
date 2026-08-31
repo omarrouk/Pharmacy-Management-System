@@ -27,10 +27,16 @@ test("pharmacist cannot manage users", () => {
     PERMISSIONS.BATCHES_READ,
     PERMISSIONS.INVENTORY_READ,
     PERMISSIONS.STOCK_MOVEMENTS_READ,
+    PERMISSIONS.SUPPLY_REQUESTS_READ,
+    PERMISSIONS.SHIPMENTS_READ,
   ]);
   assert.equal(hasPermission(ROLES.PHARMACIST, PERMISSIONS.USERS_CREATE), false);
   assert.equal(
     hasPermission(ROLES.PHARMACIST, PERMISSIONS.STOCK_MOVEMENTS_CREATE),
+    false,
+  );
+  assert.equal(
+    hasPermission(ROLES.PHARMACIST, PERMISSIONS.SUPPLY_REQUESTS_CREATE),
     false,
   );
 });
@@ -99,6 +105,14 @@ test("warehouse manager can read and update warehouses", () => {
   );
   assert.equal(
     hasPermission(ROLES.WAREHOUSE_MANAGER, PERMISSIONS.STOCK_MOVEMENTS_CREATE),
+    true,
+  );
+  assert.equal(
+    hasPermission(ROLES.WAREHOUSE_MANAGER, PERMISSIONS.SUPPLY_REQUESTS_APPROVE),
+    true,
+  );
+  assert.equal(
+    hasPermission(ROLES.WAREHOUSE_MANAGER, PERMISSIONS.SHIPMENTS_SEND),
     true,
   );
 });

@@ -141,6 +141,32 @@ test("stock movements list requires authentication", async (t) => {
   assert.equal(body.data.code, "UNAUTHENTICATED");
 });
 
+test("supply requests list requires authentication", async (t) => {
+  const server = await startTestServer();
+  t.after(() => server.close());
+
+  const response = await fetch(
+    `http://127.0.0.1:${server.address().port}/api/v1/supply-requests`,
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(body.data.code, "UNAUTHENTICATED");
+});
+
+test("shipments list requires authentication", async (t) => {
+  const server = await startTestServer();
+  t.after(() => server.close());
+
+  const response = await fetch(
+    `http://127.0.0.1:${server.address().port}/api/v1/shipments`,
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(body.data.code, "UNAUTHENTICATED");
+});
+
 test("Joi validation middleware rejects invalid request input", async () => {
   const schema = Joi.object({ name: Joi.string().required() });
   const request = { body: {} };
