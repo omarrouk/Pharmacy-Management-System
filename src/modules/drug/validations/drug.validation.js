@@ -37,3 +37,8 @@ export const listDrugsQuerySchema = Joi.object({
   categoryId: objectId,
   activeIngredientId: objectId,
 });
+
+export const listAlternativesQuerySchema = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(20),
+});

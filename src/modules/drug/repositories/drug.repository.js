@@ -21,7 +21,14 @@ export const updateDrugById = (id, data, session) =>
     session,
   });
 
-export const findDrugsByActiveIngredient = (activeIngredientId) =>
-  Drug.find({ activeIngredientIds: activeIngredientId, isActive: true }).sort({
-    name: 1,
-  });
+export const findDrugsByActiveIngredient = (
+  activeIngredientId,
+  { skip = 0, limit = 20 } = {},
+) =>
+  Drug.find({ activeIngredientIds: activeIngredientId, isActive: true })
+    .sort({ name: 1 })
+    .skip(skip)
+    .limit(limit);
+
+export const countDrugsByActiveIngredient = (activeIngredientId) =>
+  Drug.countDocuments({ activeIngredientIds: activeIngredientId, isActive: true });

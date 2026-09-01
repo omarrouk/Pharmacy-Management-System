@@ -7,6 +7,7 @@ import * as drugController from "../controllers/drug.controller.js";
 import {
   createDrugSchema,
   drugIdParamSchema,
+  listAlternativesQuerySchema,
   listDrugsQuerySchema,
   updateDrugSchema,
 } from "../validations/drug.validation.js";
@@ -15,13 +16,9 @@ import {
   listPriceHistoryQuerySchema,
   updateSellingPriceSchema,
 } from "../../priceHistory/validations/priceHistory.validation.js";
-import Joi from "joi";
+import { activeIngredientIdParamSchema } from "../../activeIngredient/validations/activeIngredient.validation.js";
 
 const router = Router();
-
-const activeIngredientIdParamSchema = Joi.object({
-  activeIngredientId: Joi.string().hex().length(24).required(),
-});
 
 router.use(authenticate);
 
@@ -36,6 +33,7 @@ router.get(
   "/by-active-ingredient/:activeIngredientId",
   authorize(PERMISSIONS.DRUGS_READ),
   validate(activeIngredientIdParamSchema, "params"),
+  validate(listAlternativesQuerySchema, "query"),
   drugController.listAlternatives,
 );
 

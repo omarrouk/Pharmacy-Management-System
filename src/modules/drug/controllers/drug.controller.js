@@ -28,8 +28,9 @@ export const deactivateDrug = asyncHandler(async (req, res) => {
 });
 
 export const listAlternatives = asyncHandler(async (req, res) => {
-  const drugs = await drugService.listDrugsByActiveIngredient(
+  const result = await drugService.listDrugsByActiveIngredient(
     req.params.activeIngredientId,
+    req.validatedQuery,
   );
-  return success(res, "Alternative drugs retrieved.", drugs);
+  return success(res, "Alternative drugs retrieved.", result);
 });

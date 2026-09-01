@@ -161,7 +161,10 @@ export const deactivateDrug = async (id) => {
   return toPublic(updated);
 };
 
-export const listDrugsByActiveIngredient = async (activeIngredientId) => {
+export const listDrugsByActiveIngredient = async (
+  activeIngredientId,
+  { page, limit },
+) => {
   const ingredient = await activeIngredientRepository.findActiveIngredientById(
     activeIngredientId,
   );
@@ -174,9 +177,11 @@ export const listDrugsByActiveIngredient = async (activeIngredientId) => {
     );
   }
 
-  const drugs = await drugRepository.findDrugsByActiveIngredient(
-    activeIngredientId,
-  );
+  const skip = (page - 1) * limit;
+  const [items, total] = await Promise.all([
+    drugRepository.findDrugsByActiveIngredient(activeIngredientId, { skip, limit }),
+    drugRepository.countDrugsByActiveIngredient(activeIngredientId),
+  ]);
 
-  return drugs.map(toPublic);
+  return { items: items.map(toPublic), page, limit, total };
 };
