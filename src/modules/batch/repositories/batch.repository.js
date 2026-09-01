@@ -1,6 +1,12 @@
 import { Batch } from "../models/batch.model.js";
 
-export const createBatch = (data) => Batch.create(data);
+export const createBatch = (data, session) => {
+  if (session) {
+    return Batch.create([data], { session }).then(([doc]) => doc);
+  }
+
+  return Batch.create(data);
+};
 
 export const findBatchById = (id) => Batch.findById(id);
 

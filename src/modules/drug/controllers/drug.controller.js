@@ -3,7 +3,7 @@ import { success } from "../../../utils/response.js";
 import * as drugService from "../services/drug.service.js";
 
 export const createDrug = asyncHandler(async (req, res) => {
-  const drug = await drugService.createDrug(req.body);
+  const drug = await drugService.createDrug(req.user, req.body);
   return success(res, "Drug created.", drug, 201);
 });
 

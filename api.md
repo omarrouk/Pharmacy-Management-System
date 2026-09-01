@@ -683,3 +683,444 @@ Permissions:
 - approve/reject: managers + pharmacy admin
 - create/send shipments: warehouse side
 - receive shipments: destination side (pharmacy or warehouse)
+
+---
+
+## Purchasing
+
+**Workflow:** supplier → purchase request → approve → purchase order → receive (batches + stock in + invoice)
+
+Warehouse manager with `unitCost` on each item gets **auto-approve** and a purchase order on create.
+
+### Suppliers
+
+Postman folder: **Suppliers**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List suppliers | `GET` | `/api/v1/suppliers` |
+| Get supplier by ID | `GET` | `/api/v1/suppliers/SUPPLIER_ID` |
+| Register supplier | `POST` | `/api/v1/suppliers` |
+| Update supplier | `PATCH` | `/api/v1/suppliers/SUPPLIER_ID` |
+| Deactivate supplier | `POST` | `/api/v1/suppliers/SUPPLIER_ID/deactivate` |
+
+**Register supplier**
+
+`POST /api/v1/suppliers`
+
+```json
+{
+  "name": "MedSupply Co.",
+  "code": "SUP01",
+  "phone": "+963900000001",
+  "email": "orders@medsupply.com",
+  "address": "Industrial Zone"
+}
+```
+
+Copy `id` from response → use as `SUPPLIER_ID`.
+
+List search: `GET /api/v1/suppliers?search=med`
+
+---
+
+### Purchase requests
+
+Postman folder: **Purchase Requests**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List purchase requests | `GET` | `/api/v1/purchase-requests` |
+| Get purchase request by ID | `GET` | `/api/v1/purchase-requests/REQUEST_ID` |
+| Create purchase request | `POST` | `/api/v1/purchase-requests` |
+| Approve purchase request | `POST` | `/api/v1/purchase-requests/REQUEST_ID/approve` |
+| Reject purchase request | `POST` | `/api/v1/purchase-requests/REQUEST_ID/reject` |
+| Cancel purchase request | `POST` | `/api/v1/purchase-requests/REQUEST_ID/cancel` |
+
+**Where to get IDs**
+
+| Field | Source |
+|---|---|
+| `warehouseId` | `GET /api/v1/warehouses` → `data.items[].id` |
+| `supplierId` | `GET /api/v1/suppliers` → `data.items[].id` |
+| `drugId` | `GET /api/v1/drugs` → `data.items[].id` |
+
+---
+
+**Create purchase request — employee** (needs manager approval)
+
+`POST /api/v1/purchase-requests`
+
+```json
+{
+  "warehouseId": "WAREHOUSE_ID",
+  "supplierId": "SUPPLIER_ID",
+  "items": [
+    { "drugId": "DRUG_ID", "requestedQuantity": 100 }
+  ]
+}
+```
+
+---
+
+**Create purchase request — manager** (auto-approve if `unitCost` on every item)
+
+```json
+{
+  "warehouseId": "WAREHOUSE_ID",
+  "supplierId": "SUPPLIER_ID",
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "requestedQuantity": 100,
+      "unitCost": 1200
+    }
+  ]
+}
+```
+
+Response includes `purchaseOrder` with `id` and `orderNumber` when auto-approved.
+
+---
+
+**Approve purchase request** (creates purchase order — inventory **not** changed yet)
+
+`POST /api/v1/purchase-requests/REQUEST_ID/approve`
+
+```json
+{
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "approvedQuantity": 100,
+      "unitCost": 1200,
+      "itemReason": ""
+    }
+  ]
+}
+```
+
+Use `itemReason` when `approvedQuantity` is reduced or `0`.
+
+Response: `{ request, purchaseOrder }` — copy `purchaseOrder.id` for receiving.
+
+---
+
+**Reject purchase request**
+
+`POST /api/v1/purchase-requests/REQUEST_ID/reject`
+
+```json
+{
+  "rejectionReason": "Supplier cannot fulfill this order"
+}
+```
+
+---
+
+**Cancel purchase request** (while `PENDING_APPROVAL` only)
+
+`POST /api/v1/purchase-requests/REQUEST_ID/cancel`
+
+---
+
+### Purchase orders
+
+Postman folder: **Purchase Orders**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List purchase orders | `GET` | `/api/v1/purchase-orders` |
+| Get purchase order by ID | `GET` | `/api/v1/purchase-orders/ORDER_ID` |
+
+Created automatically on approval — no manual create endpoint.
+
+List filters: `?status=OPEN` · `?warehouseId=...` · `?supplierId=...`
+
+Statuses: `OPEN` → `PARTIALLY_RECEIVED` → `RECEIVED`
+
+---
+
+### Purchase receipts and invoices
+
+Postman folder: **Purchase Receipts**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| Receive purchase | `POST` | `/api/v1/purchase-receipts` |
+| List purchase receipts | `GET` | `/api/v1/purchase-receipts` |
+| Get purchase receipt by ID | `GET` | `/api/v1/purchase-receipts/RECEIPT_ID` |
+| List purchase invoices | `GET` | `/api/v1/purchase-invoices` |
+| Get purchase invoice by ID | `GET` | `/api/v1/purchase-invoices/INVOICE_ID` |
+
+Receiving creates **receipt + invoice + stock in** in one atomic step.
+
+---
+
+**Receive purchase — new batch**
+
+`POST /api/v1/purchase-receipts`
+
+```json
+{
+  "purchaseOrderId": "ORDER_ID",
+  "invoiceNumber": "INV-2026-0001",
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "batchNumber": "BN2026-100",
+      "expiryDate": "2027-12-31",
+      "quantity": 100,
+      "unitCost": 1200
+    }
+  ]
+}
+```
+
+---
+
+**Receive purchase — existing batch**
+
+```json
+{
+  "purchaseOrderId": "ORDER_ID",
+  "invoiceNumber": "INV-2026-0002",
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "batchId": "BATCH_ID",
+      "quantity": 50,
+      "unitCost": 1200
+    }
+  ]
+}
+```
+
+Same drug can appear on multiple lines with different batches.
+
+Response: `{ receipt, invoice }` — stock is now in warehouse inventory.
+
+---
+
+### Full purchasing test flow (Postman)
+
+| Step | Postman request name |
+|---|---|
+| 1 | **Register supplier** |
+| 2 | **Create purchase request** (manager with `unitCost` → auto PO) |
+| 3 | Or **Approve purchase request** if employee created it |
+| 4 | **Get purchase order by ID** — confirm `status: OPEN` |
+| 5 | **Receive purchase** — new or existing batch |
+| 6 | **List purchase invoices** |
+| 7 | `GET /api/v1/inventory?locationType=warehouse&locationId=WAREHOUSE_ID` — verify stock |
+
+---
+
+### Common errors
+
+| Code | Meaning | Fix |
+|---|---|---|
+| `INVALID_SUPPLIER` | Supplier missing or inactive | Register/activate supplier first |
+| `ITEM_REASON_REQUIRED` | Reduced/rejected item without reason | Add `itemReason` on approve |
+| `PURCHASE_ORDER_NOT_FOUND` | Bad order id | Use id from approve/auto-approve response |
+| `EXCEEDS_ORDERED_QUANTITY` | Receive qty too high | Check remaining on purchase order |
+| `INVOICE_IN_USE` | Duplicate `invoiceNumber` | Use a unique invoice number |
+| `INVALID_ORDER_STATUS` | PO already fully received | List orders and pick an `OPEN` one |
+
+---
+
+### Permissions
+
+- suppliers manage: System Admin, Pharmacy Admin, Warehouse Manager
+- create/cancel purchase requests: warehouse employees/managers
+- approve/reject: warehouse manager, pharmacy admin
+- receive purchase: warehouse employees/managers
+- read invoices/orders: warehouse roles + pharmacist (read suppliers/orders)
+
+---
+
+## Sales and Pricing
+
+**Workflow:** payment method → stock at pharmacy → create sales invoice (FEFO stock out + immutable invoice)
+
+Prices are **uniform across pharmacies**. Use the dedicated selling-price endpoint — not `PATCH /drugs/:id`.
+
+### Payment methods
+
+Postman folder: **Payment Methods**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List payment methods | `GET` | `/api/v1/payment-methods` |
+| Get payment method by ID | `GET` | `/api/v1/payment-methods/PAYMENT_METHOD_ID` |
+| Create payment method | `POST` | `/api/v1/payment-methods` |
+| Update payment method | `PATCH` | `/api/v1/payment-methods/PAYMENT_METHOD_ID` |
+| Deactivate payment method | `POST` | `/api/v1/payment-methods/PAYMENT_METHOD_ID/deactivate` |
+
+**Create payment method** (System Admin only)
+
+`POST /api/v1/payment-methods`
+
+```json
+{
+  "name": "Cash",
+  "code": "CASH"
+}
+```
+
+Copy `id` from response → use as `PAYMENT_METHOD_ID`.
+
+---
+
+### Selling prices and history
+
+Postman folder: **Drugs — Pricing**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| Update selling price | `PATCH` | `/api/v1/drugs/DRUG_ID/selling-price` |
+| List price history | `GET` | `/api/v1/drugs/DRUG_ID/price-history` |
+
+**Update selling price** (Manager / Pharmacy Admin / System Admin)
+
+`PATCH /api/v1/drugs/DRUG_ID/selling-price`
+
+```json
+{
+  "sellingPrice": 1800
+}
+```
+
+Creates a price history record. Regular `PATCH /drugs/:id` rejects `sellingPrice` with `USE_PRICE_ENDPOINT`.
+
+**List price history**
+
+`GET /api/v1/drugs/DRUG_ID/price-history?page=1&limit=20`
+
+New drugs also get an initial history entry on create.
+
+---
+
+### Sales invoices
+
+Postman folder: **Sales Invoices**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List sales invoices | `GET` | `/api/v1/sales-invoices` |
+| Get sales invoice by ID | `GET` | `/api/v1/sales-invoices/INVOICE_ID` |
+| Create sales invoice | `POST` | `/api/v1/sales-invoices` |
+
+Invoices are **immutable** after creation (read-only).
+
+**Where to get IDs**
+
+| Field | Source |
+|---|---|
+| `pharmacyId` | `GET /api/v1/pharmacies` → `data.items[].id` |
+| `paymentMethodId` | `GET /api/v1/payment-methods` → `data.items[].id` |
+| `drugId` | `GET /api/v1/drugs` → `data.items[].id` |
+| `batchId` (optional override) | `GET /api/v1/batches/fefo/DRUG_ID` or inventory list |
+
+**Prerequisite:** pharmacy must have stock. Move stock in via shipment receive or manual `POST /stock-movements` (`locationType: pharmacy`, `direction: in`).
+
+---
+
+**Create sales invoice — FEFO** (auto-picks earliest-expiry batches)
+
+`POST /api/v1/sales-invoices`
+
+```json
+{
+  "pharmacyId": "PHARMACY_ID",
+  "paymentMethodId": "PAYMENT_METHOD_ID",
+  "customer": {
+    "name": "Ahmad Ali",
+    "nationalId": ""
+  },
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "quantity": 2
+    }
+  ]
+}
+```
+
+Invoice number is auto-generated (`SALE-YYYYMMDD-0001`). Unit price is snapshotted from the drug's current `sellingPrice`.
+
+---
+
+**Create sales invoice — batch override**
+
+```json
+{
+  "pharmacyId": "PHARMACY_ID",
+  "paymentMethodId": "PAYMENT_METHOD_ID",
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "batchId": "BATCH_ID",
+      "quantity": 1
+    }
+  ]
+}
+```
+
+---
+
+**Create sales invoice — with discount** (Manager / Pharmacy Admin / System Admin only)
+
+```json
+{
+  "pharmacyId": "PHARMACY_ID",
+  "paymentMethodId": "PAYMENT_METHOD_ID",
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "quantity": 2,
+      "discountType": "PERCENTAGE",
+      "discountValue": 10
+    }
+  ]
+}
+```
+
+`discountType`: `PERCENTAGE` or `FIXED`.
+
+Employees/pharmacists without discount permission get `DISCOUNT_FORBIDDEN`.
+
+---
+
+### Full sales test flow (Postman)
+
+| Step | Postman request name |
+|---|---|
+| 1 | **Create payment method** (admin) |
+| 2 | Confirm pharmacy stock — `GET /api/v1/inventory?locationType=pharmacy&locationId=PHARMACY_ID` |
+| 3 | If empty: receive shipment or **Create stock movement** (in, pharmacy) |
+| 4 | **Create sales invoice** — FEFO |
+| 5 | **List sales invoices** |
+| 6 | `GET /api/v1/inventory?...` — verify stock decreased |
+| 7 | Optional: **Update selling price** + **List price history** |
+
+---
+
+### Common errors
+
+| Code | Meaning | Fix |
+|---|---|---|
+| `INSUFFICIENT_STOCK` | Not enough stock at pharmacy | Add stock first |
+| `INVALID_PAYMENT_METHOD` | Payment method missing/inactive | Create or pick active method |
+| `DISCOUNT_FORBIDDEN` | Discount without permission | Remove discount or use manager account |
+| `USE_PRICE_ENDPOINT` | Tried `sellingPrice` on drug PATCH | Use `/selling-price` endpoint |
+| `PRICE_UNCHANGED` | Same price submitted | Send a different value |
+| `BATCH_DRUG_MISMATCH` | Batch belongs to another drug | Pick correct batch |
+
+---
+
+### Permissions
+
+- payment methods manage: System Admin only
+- payment methods read + sales create/read: pharmacist, pharmacy employee, pharmacy manager, pharmacy admin
+- update selling price + apply discount: pharmacy manager, pharmacy admin, system admin

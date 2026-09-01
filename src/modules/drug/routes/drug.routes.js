@@ -10,6 +10,11 @@ import {
   listDrugsQuerySchema,
   updateDrugSchema,
 } from "../validations/drug.validation.js";
+import * as priceHistoryController from "../../priceHistory/controllers/priceHistory.controller.js";
+import {
+  listPriceHistoryQuerySchema,
+  updateSellingPriceSchema,
+} from "../../priceHistory/validations/priceHistory.validation.js";
 import Joi from "joi";
 
 const router = Router();
@@ -61,6 +66,22 @@ router.post(
   authorize(PERMISSIONS.DRUGS_DEACTIVATE),
   validate(drugIdParamSchema, "params"),
   drugController.deactivateDrug,
+);
+
+router.patch(
+  "/:id/selling-price",
+  authorize(PERMISSIONS.DRUGS_UPDATE_PRICE),
+  validate(drugIdParamSchema, "params"),
+  validate(updateSellingPriceSchema),
+  priceHistoryController.updateSellingPrice,
+);
+
+router.get(
+  "/:id/price-history",
+  authorize(PERMISSIONS.DRUGS_READ),
+  validate(drugIdParamSchema, "params"),
+  validate(listPriceHistoryQuerySchema, "query"),
+  priceHistoryController.listPriceHistory,
 );
 
 export default router;

@@ -167,6 +167,58 @@ test("shipments list requires authentication", async (t) => {
   assert.equal(body.data.code, "UNAUTHENTICATED");
 });
 
+test("suppliers list requires authentication", async (t) => {
+  const server = await startTestServer();
+  t.after(() => server.close());
+
+  const response = await fetch(
+    `http://127.0.0.1:${server.address().port}/api/v1/suppliers`,
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(body.data.code, "UNAUTHENTICATED");
+});
+
+test("purchase requests list requires authentication", async (t) => {
+  const server = await startTestServer();
+  t.after(() => server.close());
+
+  const response = await fetch(
+    `http://127.0.0.1:${server.address().port}/api/v1/purchase-requests`,
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(body.data.code, "UNAUTHENTICATED");
+});
+
+test("payment methods list requires authentication", async (t) => {
+  const server = await startTestServer();
+  t.after(() => server.close());
+
+  const response = await fetch(
+    `http://127.0.0.1:${server.address().port}/api/v1/payment-methods`,
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(body.data.code, "UNAUTHENTICATED");
+});
+
+test("sales invoices list requires authentication", async (t) => {
+  const server = await startTestServer();
+  t.after(() => server.close());
+
+  const response = await fetch(
+    `http://127.0.0.1:${server.address().port}/api/v1/sales-invoices`,
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(body.data.code, "UNAUTHENTICATED");
+});
+
 test("Joi validation middleware rejects invalid request input", async () => {
   const schema = Joi.object({ name: Joi.string().required() });
   const request = { body: {} };

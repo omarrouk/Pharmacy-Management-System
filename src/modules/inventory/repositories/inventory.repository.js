@@ -51,3 +51,33 @@ export const sumDrugQuantityAtLocation = (locationType, locationId, drugId) =>
     },
     { $group: { _id: null, totalQuantity: { $sum: "$quantity" } } },
   ]);
+
+export const listPharmacyInventoryFefo = (pharmacyId, drugId) =>
+  Inventory.aggregate([
+    {
+      $match: {
+        locationType: "pharmacy",
+        locationId: new mongoose.Types.ObjectId(pharmacyId),
+        drugId: new mongoose.Types.ObjectId(drugId),
+        quantity: { $gt: 0 },
+      },
+    },
+    {
+      $lookup: {
+        from: "batches",
+        localField: "batchId",
+        foreignField: "_id",
+        as: "batch",
+      },
+    },
+    { $unwind: "$batch" },
+    { $match: { "batch.isActive": true } },
+    { $sort: { "batch.expiryDate": 1 } },
+    {
+      $project: {
+        batchId: 1,
+        quantity: 1,
+        expiryDate: "$batch.expiryDate",
+      },
+    },
+  ]);

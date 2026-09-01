@@ -22,7 +22,6 @@ export const updateDrugSchema = Joi.object({
   dosageForm: Joi.string().trim().min(2).max(50),
   concentration: Joi.string().trim().min(1).max(50),
   barcode: Joi.string().trim().min(3).max(50),
-  sellingPrice: Joi.number().min(0),
   minimumStockThreshold: Joi.number().min(0),
   isActive: Joi.boolean(),
 }).min(1);

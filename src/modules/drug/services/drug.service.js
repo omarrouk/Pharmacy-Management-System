@@ -3,6 +3,7 @@ import * as activeIngredientRepository from "../../activeIngredient/repositories
 import * as categoryRepository from "../../category/repositories/category.repository.js";
 import * as manufacturerRepository from "../../manufacturer/repositories/manufacturer.repository.js";
 import * as drugRepository from "../repositories/drug.repository.js";
+import { recordInitialPriceHistory } from "../../priceHistory/services/priceHistory.service.js";
 
 const toPublic = (doc) => doc.toJSON();
 
@@ -63,7 +64,7 @@ const buildListFilter = ({ search, categoryId, activeIngredientId }) => {
   return filter;
 };
 
-export const createDrug = async (payload) => {
+export const createDrug = async (actor, payload) => {
   await assertReferences(payload);
 
   const existing = await drugRepository.findDrugByBarcode(payload.barcode);
@@ -73,6 +74,11 @@ export const createDrug = async (payload) => {
   }
 
   const drug = await drugRepository.createDrug(payload);
+
+  if (actor) {
+    await recordInitialPriceHistory(drug, actor);
+  }
+
   return toPublic(drug);
 };
 
@@ -126,6 +132,14 @@ export const updateDrug = async (id, payload) => {
     if (existing && String(existing._id) !== String(id)) {
       throw new AppError("Barcode is already in use.", 409, "BARCODE_IN_USE");
     }
+  }
+
+  if (payload.sellingPrice !== undefined) {
+    throw new AppError(
+      "Use the selling price endpoint to update price.",
+      400,
+      "USE_PRICE_ENDPOINT",
+    );
   }
 
   const updated = await drugRepository.updateDrugById(id, payload);

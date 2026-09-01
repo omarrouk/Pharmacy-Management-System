@@ -1,0 +1,6 @@
+export const DISCOUNT_TYPES = {
+  PERCENTAGE: "PERCENTAGE",
+  FIXED: "FIXED",
+};
+
+export const DISCOUNT_TYPE_VALUES = Object.values(DISCOUNT_TYPES);

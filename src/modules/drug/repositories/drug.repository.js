@@ -14,10 +14,11 @@ export const listDrugs = ({ filter = {}, skip = 0, limit = 20 } = {}) =>
 
 export const countDrugs = (filter = {}) => Drug.countDocuments(filter);
 
-export const updateDrugById = (id, data) =>
+export const updateDrugById = (id, data, session) =>
   Drug.findByIdAndUpdate(id, data, {
     returnDocument: "after",
     runValidators: true,
+    session,
   });
 
 export const findDrugsByActiveIngredient = (activeIngredientId) =>

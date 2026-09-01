@@ -13,6 +13,13 @@ import inventoryRoutes from "./modules/inventory/routes/inventory.routes.js";
 import stockMovementRoutes from "./modules/stockMovement/routes/stockMovement.routes.js";
 import supplyRequestRoutes from "./modules/supplyRequest/routes/supplyRequest.routes.js";
 import shipmentRoutes from "./modules/shipment/routes/shipment.routes.js";
+import supplierRoutes from "./modules/supplier/routes/supplier.routes.js";
+import purchaseRequestRoutes from "./modules/purchaseRequest/routes/purchaseRequest.routes.js";
+import purchaseOrderRoutes from "./modules/purchaseOrder/routes/purchaseOrder.routes.js";
+import purchaseReceiptRoutes from "./modules/purchaseReceipt/routes/purchaseReceipt.routes.js";
+import purchaseInvoiceRoutes from "./modules/purchaseInvoice/routes/purchaseInvoice.routes.js";
+import paymentMethodRoutes from "./modules/paymentMethod/routes/paymentMethod.routes.js";
+import salesInvoiceRoutes from "./modules/salesInvoice/routes/salesInvoice.routes.js";
 import manufacturerRoutes from "./modules/manufacturer/routes/manufacturer.routes.js";
 import pharmacyRoutes from "./modules/pharmacy/routes/pharmacy.routes.js";
 import userRoutes from "./modules/user/routes/user.routes.js";
@@ -57,6 +64,13 @@ export const createApp = () => {
   app.use("/api/v1/stock-movements", stockMovementRoutes);
   app.use("/api/v1/supply-requests", supplyRequestRoutes);
   app.use("/api/v1/shipments", shipmentRoutes);
+  app.use("/api/v1/suppliers", supplierRoutes);
+  app.use("/api/v1/purchase-requests", purchaseRequestRoutes);
+  app.use("/api/v1/purchase-orders", purchaseOrderRoutes);
+  app.use("/api/v1/purchase-receipts", purchaseReceiptRoutes);
+  app.use("/api/v1/purchase-invoices", purchaseInvoiceRoutes);
+  app.use("/api/v1/payment-methods", paymentMethodRoutes);
+  app.use("/api/v1/sales-invoices", salesInvoiceRoutes);
 
   app.use(notFoundHandler);
 
