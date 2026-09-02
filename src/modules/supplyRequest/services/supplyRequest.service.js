@@ -10,6 +10,9 @@ import * as drugRepository from "../../drug/repositories/drug.repository.js";
 import * as pharmacyRepository from "../../pharmacy/repositories/pharmacy.repository.js";
 import * as warehouseRepository from "../../warehouse/repositories/warehouse.repository.js";
 import * as supplyRequestRepository from "../repositories/supplyRequest.repository.js";
+import { recordAuditLog } from "../../auditLog/services/auditLogRecorder.service.js";
+import { AUDIT_ACTIONS } from "../../../constants/audit.js";
+import { notifySupplyRequestUpdate } from "../../notification/services/notification.service.js";
 
 const toPublic = (doc) => doc.toJSON();
 
@@ -323,6 +326,18 @@ export const approveSupplyRequest = async (actor, id, payload) => {
     approvedAt: new Date(),
   });
 
+  await recordAuditLog(actor, {
+    action: AUDIT_ACTIONS.SUPPLY_REQUEST_APPROVE,
+    entityType: "SupplyRequest",
+    entityId: String(id),
+  });
+
+  await notifySupplyRequestUpdate({
+    supplyRequest: updated,
+    title: "Supply request approved",
+    message: `Supply request ${id} was approved.`,
+  });
+
   return toPublic(updated);
 };
 
@@ -350,6 +365,18 @@ export const rejectSupplyRequest = async (actor, id, payload) => {
     rejectionReason: payload.rejectionReason,
     approvedBy: actor._id,
     approvedAt: new Date(),
+  });
+
+  await recordAuditLog(actor, {
+    action: AUDIT_ACTIONS.SUPPLY_REQUEST_REJECT,
+    entityType: "SupplyRequest",
+    entityId: String(id),
+  });
+
+  await notifySupplyRequestUpdate({
+    supplyRequest: updated,
+    title: "Supply request rejected",
+    message: `Supply request ${id} was rejected.`,
   });
 
   return toPublic(updated);

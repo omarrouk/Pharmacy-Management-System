@@ -17,6 +17,9 @@ import { assertActivePaymentMethod } from "../../paymentMethod/services/paymentM
 import * as pharmacyRepository from "../../pharmacy/repositories/pharmacy.repository.js";
 import { applyStockMovement } from "../../stockMovement/services/stockMovement.service.js";
 import * as salesInvoiceRepository from "../repositories/salesInvoice.repository.js";
+import { recordAuditLog } from "../../auditLog/services/auditLogRecorder.service.js";
+import { AUDIT_ACTIONS } from "../../../constants/audit.js";
+import { checkLowStockAtLocation } from "../../notification/services/alert.service.js";
 
 const toPublic = (doc) => doc.toJSON();
 
@@ -226,6 +229,23 @@ export const createSalesInvoice = async (actor, payload) => {
         session,
       );
     });
+
+    await recordAuditLog(actor, {
+      action: AUDIT_ACTIONS.SALES_INVOICE_CREATE,
+      entityType: "SalesInvoice",
+      entityId: String(invoice._id),
+      metadata: { invoiceNumber: invoice.invoiceNumber },
+    });
+
+    const drugIds = [...new Set(resolvedLines.map((line) => String(line.drugId)))];
+
+    for (const drugId of drugIds) {
+      await checkLowStockAtLocation(
+        LOCATION_TYPES.PHARMACY,
+        String(payload.pharmacyId),
+        drugId,
+      );
+    }
 
     return toPublic(invoice);
   } finally {

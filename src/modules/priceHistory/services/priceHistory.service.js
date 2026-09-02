@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import { AppError } from "../../../utils/appError.js";
 import * as drugRepository from "../../drug/repositories/drug.repository.js";
 import * as priceHistoryRepository from "../repositories/priceHistory.repository.js";
+import { recordAuditLog } from "../../auditLog/services/auditLogRecorder.service.js";
+import { AUDIT_ACTIONS } from "../../../constants/audit.js";
 
 const toPublic = (doc) => doc.toJSON();
 
@@ -54,6 +56,13 @@ export const updateSellingPrice = async (actor, drugId, payload) => {
         },
         session,
       );
+    });
+
+    await recordAuditLog(actor, {
+      action: AUDIT_ACTIONS.DRUG_PRICE_UPDATE,
+      entityType: "Drug",
+      entityId: String(drugId),
+      metadata: { previousPrice, newPrice },
     });
 
     return toPublic(updated);

@@ -22,3 +22,20 @@ export const listPurchaseReceipts = ({
 
 export const countPurchaseReceipts = (filter = {}) =>
   PurchaseReceipt.countDocuments(filter);
+
+export const findPurchaseReceiptWithBatch = (
+  warehouseId,
+  supplierId,
+  drugId,
+  batchId,
+) =>
+  PurchaseReceipt.findOne({
+    warehouseId,
+    supplierId,
+    items: {
+      $elemMatch: {
+        drugId,
+        batchId,
+      },
+    },
+  });

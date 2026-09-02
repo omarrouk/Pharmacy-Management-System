@@ -12,6 +12,9 @@ import * as pharmacyRepository from "../../pharmacy/repositories/pharmacy.reposi
 import * as warehouseRepository from "../../warehouse/repositories/warehouse.repository.js";
 import * as inventoryRepository from "../../inventory/repositories/inventory.repository.js";
 import * as stockMovementRepository from "../repositories/stockMovement.repository.js";
+import { recordAuditLog } from "../../auditLog/services/auditLogRecorder.service.js";
+import { AUDIT_ACTIONS } from "../../../constants/audit.js";
+import { checkLowStockAtLocation } from "../../notification/services/alert.service.js";
 
 const toPublic = (doc) => doc.toJSON();
 
@@ -165,6 +168,26 @@ export const applyStockMovement = async (payload, actor, session) => {
     session,
   );
 
+  await recordAuditLog(
+    actor,
+    {
+      action: AUDIT_ACTIONS.STOCK_MOVEMENT,
+      entityType: "StockMovement",
+      entityId: String(movement._id),
+      metadata: {
+        movementType,
+        direction,
+        drugId: String(drugId),
+        batchId: String(batchId),
+        quantity,
+        locationType,
+        locationId: String(locationId),
+        reference,
+      },
+    },
+    session,
+  );
+
   return {
     movement: toPublic(movement),
     inventory: toPublic(inventory),
@@ -180,6 +203,14 @@ export const recordStockMovement = async (actor, payload) => {
     await session.withTransaction(async () => {
       result = await applyStockMovement(payload, actor, session);
     });
+
+    if (payload.direction === MOVEMENT_DIRECTIONS.OUT) {
+      await checkLowStockAtLocation(
+        payload.locationType,
+        payload.locationId,
+        payload.drugId,
+      );
+    }
 
     return result;
   } finally {

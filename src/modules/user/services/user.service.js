@@ -4,6 +4,8 @@ import { hashPassword } from "../../../utils/password.js";
 import { canAccessPharmacy, canAccessWarehouse } from "../../../utils/scope.js";
 import * as refreshTokenRepository from "../../auth/repositories/refreshToken.repository.js";
 import * as userRepository from "../repositories/user.repository.js";
+import { recordAuditLog } from "../../auditLog/services/auditLogRecorder.service.js";
+import { AUDIT_ACTIONS } from "../../../constants/audit.js";
 
 const PHARMACY_ROLES = [
   ROLES.PHARMACY_MANAGER,
@@ -146,6 +148,13 @@ export const createUser = async (actor, payload) => {
     warehouseIds,
   });
 
+  await recordAuditLog(actor, {
+    action: AUDIT_ACTIONS.USER_CREATE,
+    entityType: "User",
+    entityId: String(user._id),
+    metadata: { role: user.role, email: user.email },
+  });
+
   return toPublicUser(user);
 };
 
@@ -219,6 +228,14 @@ export const updateUser = async (actor, id, payload) => {
   }
 
   const updated = await userRepository.updateUserById(id, data);
+
+  await recordAuditLog(actor, {
+    action: AUDIT_ACTIONS.USER_UPDATE,
+    entityType: "User",
+    entityId: String(id),
+    metadata: { fields: Object.keys(payload) },
+  });
+
   return toPublicUser(updated);
 };
 
@@ -249,5 +266,12 @@ export const deactivateUser = async (actor, id) => {
 
   const updated = await userRepository.updateUserById(id, { isActive: false });
   await refreshTokenRepository.deleteAllUserRefreshTokens(id);
+
+  await recordAuditLog(actor, {
+    action: AUDIT_ACTIONS.USER_DEACTIVATE,
+    entityType: "User",
+    entityId: String(id),
+  });
+
   return toPublicUser(updated);
 };

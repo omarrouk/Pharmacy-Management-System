@@ -16,3 +16,19 @@ export const listStockMovements = ({
 
 export const countStockMovements = (filter = {}) =>
   StockMovement.countDocuments(filter);
+
+export const hasSupplyReceivingFromWarehouse = (
+  pharmacyId,
+  warehouseId,
+  drugId,
+  batchId,
+) =>
+  StockMovement.exists({
+    movementType: "SUPPLY_RECEIVING",
+    locationType: "pharmacy",
+    locationId: pharmacyId,
+    drugId,
+    batchId,
+    counterpartyLocationType: "warehouse",
+    counterpartyLocationId: warehouseId,
+  });

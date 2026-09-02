@@ -18,6 +18,8 @@ import {
 import { applyStockMovement } from "../../stockMovement/services/stockMovement.service.js";
 import { getSupplierById } from "../../supplier/services/supplier.service.js";
 import * as purchaseReceiptRepository from "../repositories/purchaseReceipt.repository.js";
+import { recordAuditLog } from "../../auditLog/services/auditLogRecorder.service.js";
+import { AUDIT_ACTIONS } from "../../../constants/audit.js";
 
 const toPublic = (doc) => doc.toJSON();
 
@@ -221,6 +223,13 @@ export const receivePurchase = async (actor, payload) => {
         receipt: toPublic(receipt),
         invoice: toPublic(invoice),
       };
+    });
+
+    await recordAuditLog(actor, {
+      action: AUDIT_ACTIONS.PURCHASE_RECEIVE,
+      entityType: "PurchaseReceipt",
+      entityId: String(result.receipt.id),
+      metadata: { invoiceNumber: payload.invoiceNumber },
     });
 
     return result;

@@ -26,3 +26,20 @@ export const updateUserById = (id, data) =>
 
 export const countAdmins = () =>
   User.countDocuments({ role: ROLES.SYSTEM_ADMIN, isActive: true });
+
+export const findActiveSystemAdmins = () =>
+  User.find({ role: ROLES.SYSTEM_ADMIN, isActive: true });
+
+export const findActiveUsersByRolesAndPharmacy = (roles, pharmacyId) =>
+  User.find({
+    role: { $in: roles },
+    isActive: true,
+    pharmacyIds: pharmacyId,
+  });
+
+export const findActiveUsersByRolesAndWarehouse = (roles, warehouseId) =>
+  User.find({
+    role: { $in: roles },
+    isActive: true,
+    warehouseIds: warehouseId,
+  });

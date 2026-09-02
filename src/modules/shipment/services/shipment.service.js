@@ -9,6 +9,10 @@ import * as batchRepository from "../../batch/repositories/batch.repository.js";
 import { applyStockMovement } from "../../stockMovement/services/stockMovement.service.js";
 import { assertApprovedSupplyRequest } from "../../supplyRequest/services/supplyRequest.service.js";
 import * as shipmentRepository from "../repositories/shipment.repository.js";
+import { recordAuditLog } from "../../auditLog/services/auditLogRecorder.service.js";
+import { AUDIT_ACTIONS } from "../../../constants/audit.js";
+import { notifyShipmentUpdate } from "../../notification/services/notification.service.js";
+import { checkLowStockAtLocation } from "../../notification/services/alert.service.js";
 
 const toPublic = (doc) => doc.toJSON();
 
@@ -264,6 +268,26 @@ export const sendShipment = async (actor, id) => {
       );
     });
 
+    await recordAuditLog(actor, {
+      action: AUDIT_ACTIONS.SHIPMENT_SEND,
+      entityType: "Shipment",
+      entityId: String(id),
+    });
+
+    await notifyShipmentUpdate({
+      shipment: updated,
+      title: "Shipment sent",
+      message: `Shipment ${id} was sent.`,
+    });
+
+    for (const item of updated.items) {
+      await checkLowStockAtLocation(
+        updated.sourceType,
+        String(updated.sourceId),
+        String(item.drugId),
+      );
+    }
+
     return toPublic(updated);
   } finally {
     await session.endSession();
@@ -388,6 +412,18 @@ export const receiveShipment = async (actor, id, payload) => {
         },
         session,
       );
+    });
+
+    await recordAuditLog(actor, {
+      action: AUDIT_ACTIONS.SHIPMENT_RECEIVE,
+      entityType: "Shipment",
+      entityId: String(id),
+    });
+
+    await notifyShipmentUpdate({
+      shipment: updated,
+      title: "Shipment received",
+      message: `Shipment ${id} was received.`,
     });
 
     return toPublic(updated);

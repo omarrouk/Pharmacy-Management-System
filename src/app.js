@@ -20,6 +20,13 @@ import purchaseReceiptRoutes from "./modules/purchaseReceipt/routes/purchaseRece
 import purchaseInvoiceRoutes from "./modules/purchaseInvoice/routes/purchaseInvoice.routes.js";
 import paymentMethodRoutes from "./modules/paymentMethod/routes/paymentMethod.routes.js";
 import salesInvoiceRoutes from "./modules/salesInvoice/routes/salesInvoice.routes.js";
+import inventoryAdjustmentRoutes from "./modules/inventoryAdjustment/routes/inventoryAdjustment.routes.js";
+import destructionRoutes from "./modules/destruction/routes/destruction.routes.js";
+import customerReturnRoutes from "./modules/customerReturn/routes/customerReturn.routes.js";
+import supplierReturnRoutes from "./modules/supplierReturn/routes/supplierReturn.routes.js";
+import pharmacyReturnRoutes from "./modules/pharmacyReturn/routes/pharmacyReturn.routes.js";
+import auditLogRoutes from "./modules/auditLog/routes/auditLog.routes.js";
+import notificationRoutes from "./modules/notification/routes/notification.routes.js";
 import manufacturerRoutes from "./modules/manufacturer/routes/manufacturer.routes.js";
 import pharmacyRoutes from "./modules/pharmacy/routes/pharmacy.routes.js";
 import userRoutes from "./modules/user/routes/user.routes.js";
@@ -71,6 +78,13 @@ export const createApp = () => {
   app.use("/api/v1/purchase-invoices", purchaseInvoiceRoutes);
   app.use("/api/v1/payment-methods", paymentMethodRoutes);
   app.use("/api/v1/sales-invoices", salesInvoiceRoutes);
+  app.use("/api/v1/inventory-adjustments", inventoryAdjustmentRoutes);
+  app.use("/api/v1/destructions", destructionRoutes);
+  app.use("/api/v1/customer-returns", customerReturnRoutes);
+  app.use("/api/v1/supplier-returns", supplierReturnRoutes);
+  app.use("/api/v1/pharmacy-returns", pharmacyReturnRoutes);
+  app.use("/api/v1/audit-logs", auditLogRoutes);
+  app.use("/api/v1/notifications", notificationRoutes);
 
   app.use(notFoundHandler);
 

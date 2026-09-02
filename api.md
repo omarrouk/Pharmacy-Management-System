@@ -1124,3 +1124,272 @@ Employees/pharmacists without discount permission get `DISCOUNT_FORBIDDEN`.
 - payment methods manage: System Admin only
 - payment methods read + sales create/read: pharmacist, pharmacy employee, pharmacy manager, pharmacy admin
 - update selling price + apply discount: pharmacy manager, pharmacy admin, system admin
+
+---
+
+## Returns, Destruction, and Corrections
+
+**Note:** `POST /api/v1/stock-movements` no longer accepts domain types (`CUSTOMER_RETURN`, `DESTRUCTION`, `INVENTORY_ADJUSTMENT`, etc.). Use the dedicated endpoints below.
+
+### Inventory adjustments
+
+Postman folder: **Inventory Adjustments**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List inventory adjustments | `GET` | `/api/v1/inventory-adjustments` |
+| Get inventory adjustment by ID | `GET` | `/api/v1/inventory-adjustments/ADJUSTMENT_ID` |
+| Create inventory adjustment | `POST` | `/api/v1/inventory-adjustments` |
+
+`POST /api/v1/inventory-adjustments`
+
+```json
+{
+  "locationType": "pharmacy",
+  "locationId": "PHARMACY_ID",
+  "reason": "Physical count correction",
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "batchId": "BATCH_ID",
+      "quantity": 5,
+      "direction": "in"
+    }
+  ]
+}
+```
+
+`direction`: `in` or `out`.
+
+---
+
+### Destructions
+
+Postman folder: **Destructions**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List destructions | `GET` | `/api/v1/destructions` |
+| Get destruction by ID | `GET` | `/api/v1/destructions/DESTRUCTION_ID` |
+| Record destruction | `POST` | `/api/v1/destructions` |
+
+```json
+{
+  "locationType": "warehouse",
+  "locationId": "WAREHOUSE_ID",
+  "reason": "Expired and unsellable",
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "batchId": "BATCH_ID",
+      "quantity": 10
+    }
+  ]
+}
+```
+
+---
+
+### Customer returns
+
+Postman folder: **Customer Returns**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List customer returns | `GET` | `/api/v1/customer-returns` |
+| Get customer return by ID | `GET` | `/api/v1/customer-returns/RETURN_ID` |
+| Create customer return | `POST` | `/api/v1/customer-returns` |
+
+Must link to an existing **sales invoice** from the same pharmacy. Items must match invoice lines (drug + batch).
+
+```json
+{
+  "salesInvoiceId": "INVOICE_ID",
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "batchId": "BATCH_ID",
+      "quantity": 1
+    }
+  ]
+}
+```
+
+Stock goes **in** at the pharmacy atomically.
+
+---
+
+### Supplier returns
+
+Postman folder: **Supplier Returns**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List supplier returns | `GET` | `/api/v1/supplier-returns` |
+| Get supplier return by ID | `GET` | `/api/v1/supplier-returns/RETURN_ID` |
+| Create supplier return | `POST` | `/api/v1/supplier-returns` |
+
+Batch must have been **purchased from that supplier** at that warehouse.
+
+```json
+{
+  "warehouseId": "WAREHOUSE_ID",
+  "supplierId": "SUPPLIER_ID",
+  "reason": "Damaged on arrival",
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "batchId": "BATCH_ID",
+      "quantity": 20
+    }
+  ]
+}
+```
+
+---
+
+### Pharmacy returns
+
+Postman folder: **Pharmacy Returns**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List pharmacy returns | `GET` | `/api/v1/pharmacy-returns` |
+| Get pharmacy return by ID | `GET` | `/api/v1/pharmacy-returns/RETURN_ID` |
+| Create pharmacy return | `POST` | `/api/v1/pharmacy-returns` |
+| Send pharmacy return | `POST` | `/api/v1/pharmacy-returns/RETURN_ID/send` |
+| Receive pharmacy return | `POST` | `/api/v1/pharmacy-returns/RETURN_ID/receive` |
+
+Returns go to the pharmacy's **primary warehouse only**. Batch must have been received from that warehouse via supply.
+
+**Create** (no inventory change yet):
+
+```json
+{
+  "pharmacyId": "PHARMACY_ID",
+  "reason": "Near expiry overstock",
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "batchId": "BATCH_ID",
+      "sentQuantity": 5
+    }
+  ]
+}
+```
+
+**Send** — stock out at pharmacy.
+
+**Receive** — stock in at warehouse:
+
+```json
+{
+  "items": [
+    {
+      "drugId": "DRUG_ID",
+      "batchId": "BATCH_ID",
+      "receivedQuantity": 5
+    }
+  ]
+}
+```
+
+Statuses: `PREPARED` → `SENT` → `PARTIALLY_RECEIVED` | `RECEIVED`
+
+---
+
+### Full returns test flow (Postman)
+
+| Step | Postman request name |
+|---|---|
+| 1 | **Create sales invoice** (prerequisite for customer return) |
+| 2 | **Create customer return** |
+| 3 | **Create pharmacy return** → **Send** → **Receive** |
+| 4 | **Create supplier return** (after purchase receive) |
+| 5 | **Record destruction** or **Create inventory adjustment** |
+
+---
+
+### Common errors
+
+| Code | Meaning | Fix |
+|---|---|---|
+| `ITEM_NOT_ON_INVOICE` | Return item not on sales invoice | Match drug + batch from invoice |
+| `EXCEEDS_SOLD_QUANTITY` | Return qty too high | Check prior returns + sold qty |
+| `BATCH_NOT_FROM_WAREHOUSE` | Pharmacy return batch not from primary warehouse | Only return supply-received stock |
+| `BATCH_NOT_FROM_SUPPLIER` | Supplier return batch not purchased from supplier | Use batch from purchase receipt |
+| `INVALID_STATUS` | Wrong workflow step | Check return/shipment status |
+| `ITEM_MISMATCH` | Receive payload doesn't match all items | Include every line |
+
+---
+
+### Permissions
+
+- customer returns: pharmacist, pharmacy employee, pharmacy manager, pharmacy admin
+- pharmacy returns create/send: pharmacy roles; receive: warehouse roles
+- supplier returns: warehouse roles
+- destruction: pharmacy + warehouse employees/managers
+- inventory adjustments create: pharmacy manager, warehouse manager, admins
+
+---
+
+## Notifications and Audit
+
+### Notifications
+
+Postman folder: **Notifications**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List my notifications | `GET` | `/api/v1/notifications` |
+| Get unread count | `GET` | `/api/v1/notifications/unread-count` |
+| Mark notification read | `PATCH` | `/api/v1/notifications/NOTIFICATION_ID/read` |
+| Mark all read | `POST` | `/api/v1/notifications/mark-all-read` |
+| Run alert scan | `POST` | `/api/v1/notifications/run-alerts` |
+
+List filters: `?status=UNREAD` · `?type=LOW_STOCK`
+
+Response includes `unreadTotal` on list.
+
+**Run alert scan** (managers/admins) — checks all inventory for low stock and all batches for near/expiry:
+
+`POST /api/v1/notifications/run-alerts`
+
+Response: `{ lowStockCreated, expiryCreated, totalCreated }`
+
+Notification types: `LOW_STOCK`, `NEAR_EXPIRY`, `EXPIRED`, `SUPPLY_REQUEST`, `SHIPMENT`, `PURCHASE_REQUEST`
+
+SMS is logged via console adapter (replaceable). Managers get SMS records for low stock and expired alerts.
+
+---
+
+### Audit logs
+
+Postman folder: **Audit Logs**
+
+| Postman request name | Method | URL |
+|---|---|---|
+| List audit logs | `GET` | `/api/v1/audit-logs` |
+| Get audit log by ID | `GET` | `/api/v1/audit-logs/LOG_ID` |
+
+Filters: `?action=auth.login` · `?userId=...` · `?entityType=SalesInvoice` · `?entityId=...`
+
+Read-only. Logs auto-delete after **90 days** (MongoDB TTL).
+
+Logged automatically for: login, user changes, stock movements, sales, purchases, supply/shipment workflows, price updates, returns, destruction, adjustments.
+
+---
+
+### Config (optional env)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `EXPIRY_ALERT_DAYS` | `30` | Near-expiry lead time |
+| `AUDIT_LOG_RETENTION_DAYS` | `90` | Audit TTL |
+
+---
+
+### Permissions
+
+- notifications read/update: all authenticated users (own notifications only)
+- run alerts + audit logs read: pharmacy manager, warehouse manager, pharmacy admin, system admin

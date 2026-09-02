@@ -8,6 +8,9 @@ import { assertActiveSupplier } from "../../supplier/services/supplier.service.j
 import * as warehouseRepository from "../../warehouse/repositories/warehouse.repository.js";
 import { createPurchaseOrderFromRequest } from "../../purchaseOrder/services/purchaseOrder.service.js";
 import * as purchaseRequestRepository from "../repositories/purchaseRequest.repository.js";
+import { recordAuditLog } from "../../auditLog/services/auditLogRecorder.service.js";
+import { AUDIT_ACTIONS } from "../../../constants/audit.js";
+import { notifyPurchaseRequestUpdate } from "../../notification/services/notification.service.js";
 
 const toPublic = (doc) => doc.toJSON();
 
@@ -286,6 +289,20 @@ export const approvePurchaseRequest = async (actor, id, payload) => {
       result = await approveAndCreateOrder(id, approvedItems, actor, session);
     });
 
+    await recordAuditLog(actor, {
+      action: AUDIT_ACTIONS.PURCHASE_REQUEST_APPROVE,
+      entityType: "PurchaseRequest",
+      entityId: String(id),
+    });
+
+    if (result?.request) {
+      await notifyPurchaseRequestUpdate({
+        purchaseRequest: result.request,
+        title: "Purchase request approved",
+        message: `Purchase request ${id} was approved.`,
+      });
+    }
+
     return result;
   } finally {
     await session.endSession();
@@ -308,6 +325,18 @@ export const rejectPurchaseRequest = async (actor, id, payload) => {
     rejectionReason: payload.rejectionReason,
     approvedBy: actor._id,
     approvedAt: new Date(),
+  });
+
+  await recordAuditLog(actor, {
+    action: AUDIT_ACTIONS.PURCHASE_REQUEST_REJECT,
+    entityType: "PurchaseRequest",
+    entityId: String(id),
+  });
+
+  await notifyPurchaseRequestUpdate({
+    purchaseRequest: updated,
+    title: "Purchase request rejected",
+    message: `Purchase request ${id} was rejected.`,
   });
 
   return toPublic(updated);

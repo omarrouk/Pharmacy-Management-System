@@ -10,6 +10,8 @@ import {
 import { comparePassword } from "../../../utils/password.js";
 import * as refreshTokenRepository from "../repositories/refreshToken.repository.js";
 import * as userRepository from "../../user/repositories/user.repository.js";
+import { recordAuditLog } from "../../auditLog/services/auditLogRecorder.service.js";
+import { AUDIT_ACTIONS } from "../../../constants/audit.js";
 
 const buildAccessPayload = (user) => ({
   sub: String(user._id),
@@ -56,6 +58,12 @@ export const login = async ({ email, password }) => {
   }
 
   const tokens = await issueTokenPair(user);
+
+  await recordAuditLog(user, {
+    action: AUDIT_ACTIONS.AUTH_LOGIN,
+    entityType: "User",
+    entityId: String(user._id),
+  });
 
   return {
     user: toAuthUser(user),

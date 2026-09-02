@@ -1,0 +1,25 @@
+export const AUDIT_ACTIONS = {
+  AUTH_LOGIN: "auth.login",
+  AUTH_LOGOUT: "auth.logout",
+  USER_CREATE: "user.create",
+  USER_UPDATE: "user.update",
+  USER_DEACTIVATE: "user.deactivate",
+  STOCK_MOVEMENT: "stock.movement",
+  SALES_INVOICE_CREATE: "salesInvoice.create",
+  PURCHASE_RECEIVE: "purchaseReceipt.receive",
+  SUPPLY_REQUEST_APPROVE: "supplyRequest.approve",
+  SUPPLY_REQUEST_REJECT: "supplyRequest.reject",
+  SHIPMENT_SEND: "shipment.send",
+  SHIPMENT_RECEIVE: "shipment.receive",
+  PURCHASE_REQUEST_APPROVE: "purchaseRequest.approve",
+  PURCHASE_REQUEST_REJECT: "purchaseRequest.reject",
+  CUSTOMER_RETURN_CREATE: "customerReturn.create",
+  PHARMACY_RETURN_SEND: "pharmacyReturn.send",
+  PHARMACY_RETURN_RECEIVE: "pharmacyReturn.receive",
+  SUPPLIER_RETURN_CREATE: "supplierReturn.create",
+  DESTRUCTION_CREATE: "destruction.create",
+  INVENTORY_ADJUSTMENT_CREATE: "inventoryAdjustment.create",
+  DRUG_PRICE_UPDATE: "drug.priceUpdate",
+};
+
+export const AUDIT_ACTION_VALUES = Object.values(AUDIT_ACTIONS);

@@ -1,4 +1,5 @@
 import Joi from "joi";
+import { DOMAIN_MOVEMENT_TYPES } from "../../../constants/restrictedMovements.js";
 import {
   LOCATION_TYPE_VALUES,
   MOVEMENT_DIRECTION_VALUES,
@@ -28,9 +29,9 @@ export const createStockMovementSchema = Joi.object({
   reference: Joi.string().trim().max(200).allow("").default(""),
   reason: Joi.string().trim().max(500).allow("").default(""),
 }).custom((value, helpers) => {
-  if (value.movementType === "INVENTORY_ADJUSTMENT" && !value.reason?.trim()) {
+  if (DOMAIN_MOVEMENT_TYPES.includes(value.movementType)) {
     return helpers.error("any.custom", {
-      message: "reason is required for inventory adjustments.",
+      message: "Use the dedicated endpoint for this movement type.",
     });
   }
 
