@@ -2,3 +2,10 @@
 node_modules/
 .env
 PROGRESS.md
+.cursor/
+api.md
+GIT-ACCOUNTS.md
+postman-collection.generated.json
+e2e-master-results.json
+audit-export-smoke.xlsx
+scripts/
