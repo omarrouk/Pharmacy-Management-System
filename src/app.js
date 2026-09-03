@@ -3,7 +3,9 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { getDatabaseHealth } from "./config/database.js";
+import { apiRateLimiter } from "./middlewares/apiRateLimiter.js";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
+import { requestLogger } from "./middlewares/requestLogger.js";
 import activeIngredientRoutes from "./modules/activeIngredient/routes/activeIngredient.routes.js";
 import authRoutes from "./modules/auth/routes/auth.routes.js";
 import categoryRoutes from "./modules/category/routes/category.routes.js";
@@ -27,14 +29,22 @@ import supplierReturnRoutes from "./modules/supplierReturn/routes/supplierReturn
 import pharmacyReturnRoutes from "./modules/pharmacyReturn/routes/pharmacyReturn.routes.js";
 import auditLogRoutes from "./modules/auditLog/routes/auditLog.routes.js";
 import notificationRoutes from "./modules/notification/routes/notification.routes.js";
+import reportRoutes from "./modules/report/routes/report.routes.js";
 import manufacturerRoutes from "./modules/manufacturer/routes/manufacturer.routes.js";
 import pharmacyRoutes from "./modules/pharmacy/routes/pharmacy.routes.js";
 import userRoutes from "./modules/user/routes/user.routes.js";
 import warehouseRoutes from "./modules/warehouse/routes/warehouse.routes.js";
 
+const startedAt = Date.now();
+
 export const createApp = () => {
   const app = express();
   const clientOrigin = process.env.CLIENT_ORIGIN ?? "http://localhost:3000";
+  const trustProxy = process.env.TRUST_PROXY === "true";
+
+  if (trustProxy) {
+    app.set("trust proxy", 1);
+  }
 
   app.disable("x-powered-by");
   app.use(helmet());
@@ -46,14 +56,20 @@ export const createApp = () => {
   );
   app.use(cookieParser());
   app.use(express.json({ limit: "1mb" }));
+  app.use(requestLogger);
+  app.use("/api/v1", apiRateLimiter);
 
   app.get("/api/v1/health", (req, res) => {
+    const database = getDatabaseHealth();
+
     res.status(200).json({
       success: true,
       message: "System works well.",
       data: {
         service: "pharmacy-management-system",
-        database: getDatabaseHealth(),
+        environment: process.env.NODE_ENV ?? "development",
+        uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
+        database,
       },
     });
   });
@@ -85,6 +101,7 @@ export const createApp = () => {
   app.use("/api/v1/pharmacy-returns", pharmacyReturnRoutes);
   app.use("/api/v1/audit-logs", auditLogRoutes);
   app.use("/api/v1/notifications", notificationRoutes);
+  app.use("/api/v1/reports", reportRoutes);
 
   app.use(notFoundHandler);
 

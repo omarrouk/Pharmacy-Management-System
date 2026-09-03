@@ -114,7 +114,6 @@ const salesInvoiceSchema = new mongoose.Schema(
 );
 
 salesInvoiceSchema.index({ pharmacyId: 1, createdAt: -1 });
-salesInvoiceSchema.index({ invoiceNumber: 1 });
 
 salesInvoiceSchema.set("toJSON", {
   transform: (_doc, ret) => {

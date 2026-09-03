@@ -80,11 +80,10 @@ const assertLocationExists = async (locationType, locationId) => {
   }
 };
 
-const assertBatchMatchesDrug = async (drugId, batchId) => {
-  const [drug, batch] = await Promise.all([
-    drugRepository.findDrugById(drugId),
-    batchRepository.findBatchById(batchId),
-  ]);
+const assertBatchMatchesDrug = async (drugId, batchId, session) => {
+  // ClientSession is not safe for concurrent use — keep these sequential.
+  const drug = await drugRepository.findDrugById(drugId, session);
+  const batch = await batchRepository.findBatchById(batchId, session);
 
   if (!drug || !drug.isActive) {
     throw new AppError("Drug was not found or is inactive.", 400, "INVALID_DRUG");
@@ -119,7 +118,7 @@ export const applyStockMovement = async (payload, actor, session) => {
   }
 
   await assertLocationExists(locationType, locationId);
-  await assertBatchMatchesDrug(drugId, batchId);
+  await assertBatchMatchesDrug(drugId, batchId, session);
 
   if (counterpartyLocationType && counterpartyLocationId) {
     await assertLocationExists(counterpartyLocationType, counterpartyLocationId);

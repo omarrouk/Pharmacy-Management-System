@@ -37,7 +37,7 @@ export const buildPurchaseReceiptScopeFilter = (actor) => {
 
 const resolveBatch = async (item, supplierName, invoiceNumber, session) => {
   if (item.batchId) {
-    const batch = await batchRepository.findBatchById(item.batchId);
+    const batch = await batchRepository.findBatchById(item.batchId, session);
 
     if (!batch || !batch.isActive) {
       throw new AppError("Batch was not found or is inactive.", 400, "INVALID_BATCH");
@@ -54,6 +54,7 @@ const resolveBatch = async (item, supplierName, invoiceNumber, session) => {
   const existing = await batchRepository.findBatchByDrugAndNumber(
     item.drugId,
     batchNumber,
+    session,
   );
 
   if (existing) {

@@ -8,18 +8,23 @@ export const createBatch = (data, session) => {
   return Batch.create(data);
 };
 
-export const findBatchById = (id) => Batch.findById(id);
+export const findBatchById = (id, session) => {
+  const query = Batch.findById(id);
+  return session ? query.session(session) : query;
+};
 
 export const findBatchesByIds = (ids) =>
   ids.length
     ? Batch.find({ _id: { $in: ids } }).select("batchNumber expiryDate")
     : [];
 
-export const findBatchByDrugAndNumber = (drugId, batchNumber) =>
-  Batch.findOne({
+export const findBatchByDrugAndNumber = (drugId, batchNumber, session) => {
+  const query = Batch.findOne({
     drugId,
     batchNumber: batchNumber.toUpperCase(),
   });
+  return session ? query.session(session) : query;
+};
 
 export const listBatches = ({
   filter = {},

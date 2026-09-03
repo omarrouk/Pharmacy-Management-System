@@ -5,6 +5,7 @@ import { authorize } from "../../../middlewares/authorize.js";
 import { validate } from "../../../middlewares/validate.js";
 import * as drugController from "../controllers/drug.controller.js";
 import {
+  activeIngredientIdParamSchema,
   createDrugSchema,
   drugIdParamSchema,
   listAlternativesQuerySchema,
@@ -16,7 +17,6 @@ import {
   listPriceHistoryQuerySchema,
   updateSellingPriceSchema,
 } from "../../priceHistory/validations/priceHistory.validation.js";
-import { activeIngredientIdParamSchema } from "../../activeIngredient/validations/activeIngredient.validation.js";
 
 const router = Router();
 

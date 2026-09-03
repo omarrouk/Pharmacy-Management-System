@@ -2,7 +2,10 @@ import { Drug } from "../models/drug.model.js";
 
 export const createDrug = (data) => Drug.create(data);
 
-export const findDrugById = (id) => Drug.findById(id);
+export const findDrugById = (id, session) => {
+  const query = Drug.findById(id);
+  return session ? query.session(session) : query;
+};
 
 export const findDrugsByIds = (ids) =>
   ids.length ? Drug.find({ _id: { $in: ids } }).select("name") : [];

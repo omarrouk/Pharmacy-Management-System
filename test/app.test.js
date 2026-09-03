@@ -25,6 +25,7 @@ test("health endpoint reports the foundation service status", async (t) => {
   assert.equal(body.message, "System works well.");
   assert.equal(body.data.service, "pharmacy-management-system");
   assert.equal(body.data.database.connected, false);
+  assert.equal(typeof body.data.uptimeSeconds, "number");
 });
 
 test("unknown routes return the standard safe error shape", async (t) => {
@@ -264,6 +265,19 @@ test("audit logs list requires authentication", async (t) => {
 
   const response = await fetch(
     `http://127.0.0.1:${server.address().port}/api/v1/audit-logs`,
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(body.data.code, "UNAUTHENTICATED");
+});
+
+test("reports sales requires authentication", async (t) => {
+  const server = await startTestServer();
+  t.after(() => server.close());
+
+  const response = await fetch(
+    `http://127.0.0.1:${server.address().port}/api/v1/reports/sales`,
   );
   const body = await response.json();
 

@@ -1,45 +1,123 @@
-# API requests (Postman)
+# Pharmacy Management System — API Guide (Postman)
 
-Base URL: `http://localhost:3000`
-
-Postman: enable cookies. No Authorization headers.
-
-After login, HttpOnly cookies:
-- `accessToken` — path `/api/v1`
-- `refreshToken` — path `/api/v1/auth`
-
-Replace example ObjectIds with real `id` values from responses.
+Use this document to build a Postman collection and test the full backend.
 
 ---
 
-## Auth
+## 0) Setup
 
-### Login
-`POST /api/v1/auth/login`
+### Base URL
 
+```
+http://localhost:3000
+```
+
+### Test login (System Admin)
+
+| Field | Value |
+|---|---|
+| Email | `admin@example.com` |
+| Password | `********` |
+
+> Dev seed account only. Change before production.
+
+### Postman settings
+
+1. Create collection: **Pharmacy Management System**
+2. Collection variable: `baseUrl` = `http://localhost:3000`
+3. Enable **Cookies** (HttpOnly cookies after login)
+4. Do **not** send Authorization Bearer headers
+5. All bodies = JSON (`Content-Type: application/json`)
+
+### Cookies after login
+
+| Cookie | Path |
+|---|---|
+| `accessToken` | `/api/v1` |
+| `refreshToken` | `/api/v1/auth` |
+
+### Collection variables (save as you go)
+
+| Variable | Source |
+|---|---|
+| `warehouseId` | Create / list warehouse |
+| `pharmacyId` | Create / list pharmacy |
+| `categoryId` | Create category |
+| `manufacturerId` | Create manufacturer |
+| `ingredientId` | Create active ingredient |
+| `drugId` | Create drug |
+| `batchId` | Create batch / purchase receive |
+| `supplierId` | Create supplier |
+| `paymentMethodId` | Create payment method |
+| `purchaseRequestId` | Create purchase request |
+| `purchaseOrderId` | Approve / auto-approve purchase |
+| `supplyRequestId` | Create supply request |
+| `shipmentId` | Prepare shipment |
+| `salesInvoiceId` | Create sales invoice |
+| `customerReturnId` | Create customer return |
+| `pharmacyReturnId` | Create pharmacy return |
+
+### ID rules
+
+- Every Mongo id is a **24-character hex string**
+- Copy `data.id` or `data.items[].id` from responses
+- Wrong: `"{abc...}"` or `{abc...}`
+- Right: `abc...` or Postman `{{drugId}}`
+
+### Standard response shape
+
+Success:
 ```json
 {
-  "email": "admin@example.com",
-  "password": "Admin12345"
+  "success": true,
+  "message": "...",
+  "data": {}
 }
 ```
 
-### Refresh / Logout / Me
-- `POST /api/v1/auth/refresh` (empty body)
-- `POST /api/v1/auth/logout` (empty body)
-- `GET /api/v1/auth/me`
+Error:
+```json
+{
+  "success": false,
+  "message": "...",
+  "data": { "code": "ERROR_CODE" }
+}
+```
 
 ---
 
-## Users
-`GET/POST /api/v1/users` · `GET/PATCH /api/v1/users/:id` · `POST /api/v1/users/:id/deactivate`
+## MASTER END-TO-END TEST FLOW
+
+Run these requests **in order**. After each create, save the returned `id` into a collection variable.
+
+### Phase A — Auth & health
+
+| # | Request name | Method | URL |
+|---|---|---|---|
+| A1 | Health check | `GET` | `{{baseUrl}}/api/v1/health` |
+| A2 | Login as admin | `POST` | `{{baseUrl}}/api/v1/auth/login` |
+| A3 | Current user | `GET` | `{{baseUrl}}/api/v1/auth/me` |
+
+**A2 Login body**
+```json
+{
+  "email": "admin@example.com",
+  "password": "*******"
+}
+```
 
 ---
 
-## Warehouses
-`GET/POST /api/v1/warehouses` · `GET/PATCH /api/v1/warehouses/:id` · `POST /api/v1/warehouses/:id/deactivate`
+### Phase B — Locations
 
-Create example:
+| # | Request name | Method | URL |
+|---|---|---|---|
+| B1 | Create warehouse | `POST` | `{{baseUrl}}/api/v1/warehouses` |
+| B2 | Create pharmacy | `POST` | `{{baseUrl}}/api/v1/pharmacies` |
+| B3 | List warehouses | `GET` | `{{baseUrl}}/api/v1/warehouses` |
+| B4 | List pharmacies | `GET` | `{{baseUrl}}/api/v1/pharmacies` |
+
+**B1 Create warehouse**
 ```json
 {
   "name": "Central Warehouse",
@@ -48,81 +126,66 @@ Create example:
   "phone": "+963900000000"
 }
 ```
+Save `data.id` → `warehouseId`
 
----
-
-## Pharmacies
-`GET/POST /api/v1/pharmacies` · `GET/PATCH /api/v1/pharmacies/:id` · `POST /api/v1/pharmacies/:id/deactivate`
-
-Create example:
+**B2 Create pharmacy**
 ```json
 {
   "name": "Pharmacy A",
   "code": "PH01",
   "address": "Main Street",
   "phone": "+963922222222",
-  "primaryWarehouseId": "WAREHOUSE_ID_HERE"
+  "primaryWarehouseId": "{{warehouseId}}"
 }
 ```
+Save `data.id` → `pharmacyId`
 
 ---
 
-## Catalog
+### Phase C — Catalog
 
-Build in this order: category → manufacturer → active ingredient → drug.
+| # | Request name | Method | URL |
+|---|---|---|---|
+| C1 | Create category | `POST` | `{{baseUrl}}/api/v1/categories` |
+| C2 | Create manufacturer | `POST` | `{{baseUrl}}/api/v1/manufacturers` |
+| C3 | Create active ingredient | `POST` | `{{baseUrl}}/api/v1/active-ingredients` |
+| C4 | Create drug | `POST` | `{{baseUrl}}/api/v1/drugs` |
+| C5 | List drugs | `GET` | `{{baseUrl}}/api/v1/drugs` |
+| C6 | Alternatives by ingredient | `GET` | `{{baseUrl}}/api/v1/drugs/by-active-ingredient/{{ingredientId}}?page=1&limit=20` |
 
-### Categories
-`GET/POST /api/v1/categories` · `GET/PATCH /api/v1/categories/:id` · `POST /api/v1/categories/:id/deactivate`
-
-List: `GET /api/v1/categories?search=pain`
-
-Create:
+**C1**
 ```json
 {
   "name": "Pain Relief",
   "description": "Analgesics and antipyretics"
 }
 ```
+Save → `categoryId`
 
-### Manufacturers
-`GET/POST /api/v1/manufacturers` · `GET/PATCH /api/v1/manufacturers/:id` · `POST /api/v1/manufacturers/:id/deactivate`
-
-Create:
+**C2**
 ```json
 {
   "name": "GSK",
   "country": "UK"
 }
 ```
+Save → `manufacturerId`
 
-### Active ingredients
-`GET/POST /api/v1/active-ingredients` · `GET/PATCH /api/v1/active-ingredients/:id` · `POST /api/v1/active-ingredients/:id/deactivate`
-
-Create:
+**C3**
 ```json
 {
   "name": "Paracetamol"
 }
 ```
+Save → `ingredientId`
 
-### Drugs
-`GET/POST /api/v1/drugs` · `GET/PATCH /api/v1/drugs/:id` · `POST /api/v1/drugs/:id/deactivate`
-
-List filters:
-- `?search=panadol`
-- `?categoryId=CATEGORY_ID`
-- `?activeIngredientId=INGREDIENT_ID`
-
-Alternative search (SRS):
-`GET /api/v1/drugs/by-active-ingredient/INGREDIENT_ID`
-
-Create:
+**C4**
 ```json
 {
   "name": "Panadol 500mg",
-  "activeIngredientIds": ["INGREDIENT_ID"],
-  "categoryId": "CATEGORY_ID",
-  "manufacturerId": "MANUFACTURER_ID",
+  "activeIngredientIds": ["{{ingredientId}}"],
+  "categoryId": "{{categoryId}}",
+  "manufacturerId": "{{manufacturerId}}",
   "dosageForm": "Tablet",
   "concentration": "500mg",
   "barcode": "6281000000001",
@@ -130,584 +193,30 @@ Create:
   "minimumStockThreshold": 10
 }
 ```
+Save → `drugId`
 
-Reactivate any catalog item with `"isActive": true` on PATCH.
+---
 
-Permissions:
-- create / deactivate: System Admin, Pharmacy Admin
-- read: managers, pharmacists (drugs + ingredients), employees (drugs read)
-- update: System Admin, Pharmacy Admin
+### Phase D — Purchasing (stock into warehouse)
 
-### Batches
-`GET/POST /api/v1/batches` · `GET/PATCH /api/v1/batches/:id` · `POST /api/v1/batches/:id/deactivate`
+| # | Request name | Method | URL |
+|---|---|---|---|
+| D1 | Create payment method | `POST` | `{{baseUrl}}/api/v1/payment-methods` |
+| D2 | Register supplier | `POST` | `{{baseUrl}}/api/v1/suppliers` |
+| D3 | Create purchase request (auto-approve) | `POST` | `{{baseUrl}}/api/v1/purchase-requests` |
+| D4 | Receive purchase | `POST` | `{{baseUrl}}/api/v1/purchase-receipts` |
+| D5 | Check warehouse inventory | `GET` | `{{baseUrl}}/api/v1/inventory?locationType=warehouse&locationId={{warehouseId}}` |
 
-FEFO list (active batches for one drug, earliest expiry first):
-`GET /api/v1/batches/fefo/DRUG_ID`
-
-List filters:
-- `?drugId=DRUG_ID` (sorts by expiry when set)
-- `?search=BN2026`
-
-Create:
+**D1**
 ```json
 {
-  "drugId": "DRUG_ID",
-  "batchNumber": "BN2026-001",
-  "expiryDate": "2027-06-30",
-  "source": "Supplier ABC",
-  "receiptReference": "PR-1001"
+  "name": "Cash",
+  "code": "CASH"
 }
 ```
+Save → `paymentMethodId`
 
-Notes:
-- `drugId`, `batchNumber`, and `expiryDate` are set on create only (corrections come later).
-- Quantity is **not** on the batch — it lives in **inventory** (next module).
-- Expired batches are allowed.
-- `batchNumber` is stored uppercase; unique per drug.
-
-Permissions:
-- create / deactivate: System Admin, Pharmacy Admin
-- create / update: Warehouse Manager (no deactivate)
-- read: all operational roles (managers, pharmacists, employees)
-
----
-
-## Inventory and stock
-
-**Rule:** quantity lives on **inventory** (location + batch). You never PATCH inventory directly — use **stock movements** to add or remove stock.
-
-### Quick reference
-
-| What you want | Method | URL |
-|---|---|---|
-| See all stock at a warehouse | `GET` | `/api/v1/inventory?locationType=warehouse&locationId=WAREHOUSE_ID` |
-| See all stock at a pharmacy | `GET` | `/api/v1/inventory?locationType=pharmacy&locationId=PHARMACY_ID` |
-| See stock for one drug at a location | `GET` | `/api/v1/inventory?locationType=warehouse&locationId=WAREHOUSE_ID&drugId=DRUG_ID` |
-| Total qty for one drug (all batches) | `GET` | `/api/v1/inventory/summary?locationType=warehouse&locationId=WAREHOUSE_ID&drugId=DRUG_ID` |
-| Add stock | `POST` | `/api/v1/stock-movements` with `"direction": "in"` |
-| Remove stock | `POST` | `/api/v1/stock-movements` with `"direction": "out"` |
-| Movement history | `GET` | `/api/v1/stock-movements?locationType=warehouse&locationId=WAREHOUSE_ID` |
-
-**`locationType` values:** only `warehouse` or `pharmacy` (lowercase).
-
-### ID format (important)
-
-Every `drugId`, `batchId`, `locationId` must be a **plain 24-character hex string** — no spaces, no quotes inside the value, **no curly braces**.
-
-| Wrong | Right |
-|---|---|
-| `"{6a92a4ec9e26c4085e61f2a0}"` | `"6a92a4ec9e26c4085e61f2a0"` |
-| `{6a92a4ec9e26c4085e61f2a0}` | `6a92a4ec9e26c4085e61f2a0` |
-
-**Postman variables** use **double** braces: `"drugId": "{{drugId}}"` — Postman replaces that before sending.  
-Do **not** wrap a real id in `{...}` yourself.
-
-Copy the `id` field exactly from a previous API response (e.g. `"id": "6a92a4ec9e26c4085e61f2a0"` → use `6a92a4ec9e26c4085e61f2a0` in the body).
-
----
-
-### Step-by-step (Postman)
-
-Do this once to collect IDs, then reuse them:
-
-1. `GET /api/v1/warehouses` → copy a warehouse `id`
-2. `GET /api/v1/drugs` → copy a drug `id`
-3. `POST /api/v1/batches` → create a batch, copy its `id`
-4. Add stock (step 5 below)
-5. Check inventory (step 6 below)
-
-Keep these in Postman variables (optional but helpful):
-
-| Variable | Example |
-|---|---|
-| `warehouseId` | from warehouses list |
-| `pharmacyId` | from pharmacies list |
-| `drugId` | from drugs list |
-| `batchId` | from batch create response |
-
----
-
-### 1) Add stock (warehouse receive)
-
-`POST /api/v1/stock-movements`
-
-```json
-{
-  "movementType": "PURCHASE_RECEIVING",
-  "direction": "in",
-  "drugId": "drugId",
-  "batchId": "batchId",
-  "quantity": 100,
-  "locationType": "warehouse",
-  "locationId": "warehouseId",
-  "reference": "manual-test"
-}
-```
-
-Replace the three ids above with **your** ids from GET/create responses. Or use Postman env vars: `"drugId": "{{drugId}}"`.
-
-Response includes updated `inventory.quantity` and the new `movement`.
-
----
-
-### 2) Check inventory at warehouse
-
-**All batches at warehouse:**
-```
-GET /api/v1/inventory?locationType=warehouse&locationId={{warehouseId}}
-```
-
-**One drug only:**
-```
-GET /api/v1/inventory?locationType=warehouse&locationId={{warehouseId}}&drugId={{drugId}}
-```
-
-**One batch only:**
-```
-GET /api/v1/inventory?locationType=warehouse&locationId={{warehouseId}}&batchId={{batchId}}
-```
-
-**Total for one drug (sum of all batches):**
-```
-GET /api/v1/inventory/summary?locationType=warehouse&locationId={{warehouseId}}&drugId={{drugId}}
-```
-
-Each list item includes readable names (not just ids):
-
-| Field | Meaning |
-|---|---|
-| `locationName` | Warehouse or pharmacy name |
-| `locationCode` | e.g. `WH01`, `PH01` |
-| `drugName` | Drug display name |
-| `batchNumber` | Lot number |
-| `expiryDate` | Batch expiry |
-| `quantity` | Current stock for that batch at that location |
-
-Example list response:
-```json
-{
-  "success": true,
-  "message": "Inventory retrieved.",
-  "data": {
-    "items": [
-      {
-        "id": "6a94a1b2c3d4e5f6a7b8c9d0",
-        "locationType": "warehouse",
-        "locationId": "6a90210972bc6757c2cfc483",
-        "locationName": "Central Warehouse",
-        "locationCode": "WH01",
-        "drugId": "6a92a4ec9e26c4085e61f2a0",
-        "drugName": "Panadol 500mg",
-        "batchId": "6a93f6a551a2dca6b1245093",
-        "batchNumber": "BN2026-001",
-        "expiryDate": "2027-06-30T00:00:00.000Z",
-        "quantity": 100,
-        "createdAt": "2026-08-30T10:00:00.000Z",
-        "updatedAt": "2026-08-30T10:00:00.000Z"
-      }
-    ],
-    "page": 1,
-    "limit": 20,
-    "total": 1
-  }
-}
-```
-
-Example summary response:
-```json
-{
-  "success": true,
-  "message": "Inventory summary retrieved.",
-  "data": {
-    "locationType": "warehouse",
-    "locationId": "6a90210972bc6757c2cfc483",
-    "locationName": "Central Warehouse",
-    "locationCode": "WH01",
-    "drugId": "6a92a4ec9e26c4085e61f2a0",
-    "drugName": "Panadol 500mg",
-    "totalQuantity": 100
-  }
-}
-```
-
----
-
-### 3) Remove stock (warehouse out)
-
-`POST /api/v1/stock-movements`
-
-```json
-{
-  "movementType": "SUPPLY_TO_PHARMACY",
-  "direction": "out",
-  "drugId": "{{drugId}}",
-  "batchId": "{{batchId}}",
-  "quantity": 10,
-  "locationType": "warehouse",
-  "locationId": "{{warehouseId}}"
-}
-```
-
-If qty is too high → `400` with code `INSUFFICIENT_STOCK`.
-
----
-
-### 4) Add stock at pharmacy (receive)
-
-Same as warehouse — change `locationType` and `locationId`:
-
-```json
-{
-  "movementType": "SUPPLY_RECEIVING",
-  "direction": "in",
-  "drugId": "{{drugId}}",
-  "batchId": "{{batchId}}",
-  "quantity": 10,
-  "locationType": "pharmacy",
-  "locationId": "{{pharmacyId}}"
-}
-```
-
-Check pharmacy stock:
-```
-GET /api/v1/inventory?locationType=pharmacy&locationId={{pharmacyId}}
-```
-
----
-
-### 5) Inventory adjustment (reason required)
-
-Use when correcting qty (damaged, count mismatch, etc.):
-
-`POST /api/v1/stock-movements`
-
-```json
-{
-  "movementType": "INVENTORY_ADJUSTMENT",
-  "direction": "out",
-  "drugId": "{{drugId}}",
-  "batchId": "{{batchId}}",
-  "quantity": 3,
-  "locationType": "warehouse",
-  "locationId": "{{warehouseId}}",
-  "reason": "Damaged items"
-}
-```
-
-For `"direction": "in"` adjustment, same body but positive add instead of remove.
-
----
-
-### 6) Movement history
-
-**Where to get `MOVEMENT_ID`:**
-
-| Source | Where the id is |
-|---|---|
-| After you add/remove stock | `POST /api/v1/stock-movements` → response `data.movement.id` |
-| Movement list | `GET /api/v1/stock-movements` → each item in `data.items[].id` |
-
-Example after `POST /api/v1/stock-movements`:
-```json
-{
-  "success": true,
-  "message": "Stock movement recorded.",
-  "data": {
-    "movement": {
-      "id": "6a9550aa11bb22cc33dd44ee",
-      "movementType": "PURCHASE_RECEIVING",
-      "direction": "in",
-      "quantity": 100,
-      "...": "..."
-    },
-    "inventory": {
-      "id": "...",
-      "quantity": 100,
-      "...": "..."
-    }
-  }
-}
-```
-Copy `data.movement.id` → use it as `MOVEMENT_ID`.
-
-Example list item (`GET /api/v1/stock-movements?...`):
-```json
-{
-  "items": [
-    {
-      "id": "6a9550aa11bb22cc33dd44ee",
-      "movementType": "PURCHASE_RECEIVING",
-      "direction": "in",
-      "quantity": 100
-    }
-  ]
-}
-```
-
-**At one location:**
-```
-GET /api/v1/stock-movements?locationType=warehouse&locationId={{warehouseId}}
-```
-
-**Filter by drug:**
-```
-GET /api/v1/stock-movements?locationType=warehouse&locationId={{warehouseId}}&drugId={{drugId}}
-```
-
-**Single movement (use id from create or list):**
-```
-GET /api/v1/stock-movements/6a9550aa11bb22cc33dd44ee
-```
-
----
-
-### Movement types (copy-paste)
-
-| Type | Usually used at | Direction |
-|---|---|---|
-| `PURCHASE_RECEIVING` | warehouse | `in` |
-| `SUPPLY_TO_PHARMACY` | warehouse | `out` |
-| `SUPPLY_TO_WAREHOUSE` | warehouse | `in` or `out` |
-| `SUPPLY_RECEIVING` | pharmacy | `in` |
-| `SALE` | pharmacy | `out` |
-| `CUSTOMER_RETURN` | pharmacy | `in` |
-| `RETURN_TO_WAREHOUSE` | pharmacy | `out` |
-| `RETURN_FROM_PHARMACY` | warehouse | `in` |
-| `RETURN_TO_SUPPLIER` | warehouse | `out` |
-| `DESTRUCTION` | warehouse or pharmacy | `out` |
-| `INVENTORY_ADJUSTMENT` | warehouse or pharmacy | `in` or `out` (+ `reason`) |
-
----
-
-### Common errors
-
-| Code | Meaning | Fix |
-|---|---|---|
-| `INSUFFICIENT_STOCK` | Not enough qty for `out` | Check inventory first, lower `quantity` |
-| `INVALID_DRUG` / `INVALID_BATCH` | Bad or inactive id | Use ids from live GET/create responses |
-| `BATCH_DRUG_MISMATCH` | Batch belongs to another drug | Match `batchId` to `drugId` |
-| `FORBIDDEN` | No access to that location | User must be linked to that pharmacy/warehouse |
-| `VALIDATION_ERROR` | Missing fields or bad id format | ids must be 24 hex chars — no `{...}` around them |
-
----
-
-### Permissions
-
-- **Read** inventory + movements: all operational roles
-- **Create** movements: System Admin, Pharmacy Admin, Pharmacy Manager, Warehouse Manager
-
----
-
-## Supply requests and shipments
-
-**Workflow:** request → approve → create shipment → send (stock out) → receive (stock in)
-
-Approval does **not** change inventory. Stock moves only on **send** and **receive**.
-
-### Supply requests
-
-Use these names in Postman (folder: **Supply Requests**):
-
-| Postman request name | Method | URL |
-|---|---|---|
-| List supply requests | `GET` | `/api/v1/supply-requests` |
-| Get supply request by ID | `GET` | `/api/v1/supply-requests/REQUEST_ID` |
-| Request supply — pharmacy to warehouse | `POST` | `/api/v1/supply-requests/pharmacy` |
-| Request supply — warehouse to warehouse | `POST` | `/api/v1/supply-requests/warehouse` |
-| Approve supply request | `POST` | `/api/v1/supply-requests/REQUEST_ID/approve` |
-| Reject supply request | `POST` | `/api/v1/supply-requests/REQUEST_ID/reject` |
-| Cancel supply request | `POST` | `/api/v1/supply-requests/REQUEST_ID/cancel` |
-
-List filters: `?status=APPROVED` · `?requestType=PHARMACY_TO_WAREHOUSE`
-
----
-
-**Request supply — pharmacy to warehouse**  
-Pharmacy asks its primary warehouse for stock.
-
-`POST /api/v1/supply-requests/pharmacy`
-
-```json
-{
-  "pharmacyId": "PHARMACY_ID",
-  "items": [
-    { "drugId": "DRUG_ID", "requestedQuantity": 50 }
-  ]
-}
-```
-
----
-
-**Request supply — warehouse to warehouse**  
-One warehouse asks another warehouse for stock.
-
-`POST /api/v1/supply-requests/warehouse`
-
-```json
-{
-  "sourceWarehouseId": "SOURCE_WAREHOUSE_ID",
-  "destinationWarehouseId": "DEST_WAREHOUSE_ID",
-  "items": [
-    { "drugId": "DRUG_ID", "requestedQuantity": 100 }
-  ]
-}
-```
-
----
-
-**Approve supply request**  
-Warehouse/source manager sets approved qty per drug. Inventory is **not** changed yet.
-
-`POST /api/v1/supply-requests/REQUEST_ID/approve`
-
-```json
-{
-  "items": [
-    {
-      "drugId": "DRUG_ID",
-      "approvedQuantity": 50,
-      "itemReason": ""
-    }
-  ]
-}
-```
-
-Use `itemReason` when `approvedQuantity` is reduced or set to `0`.
-
----
-
-**Reject supply request**
-
-`POST /api/v1/supply-requests/REQUEST_ID/reject`
-
-```json
-{
-  "rejectionReason": "Out of stock at warehouse"
-}
-```
-
----
-
-**Cancel supply request**  
-Only while status is `PENDING_APPROVAL`.
-
-`POST /api/v1/supply-requests/REQUEST_ID/cancel`
-
-Statuses: `PENDING_APPROVAL` → `APPROVED` | `REJECTED` | `CANCELLED`
-
----
-
-### Shipments
-
-Use these names in Postman (folder: **Shipments**):
-
-| Postman request name | Method | URL |
-|---|---|---|
-| List shipments | `GET` | `/api/v1/shipments` |
-| Get shipment by ID | `GET` | `/api/v1/shipments/SHIPMENT_ID` |
-| Prepare shipment | `POST` | `/api/v1/shipments` |
-| Send shipment | `POST` | `/api/v1/shipments/SHIPMENT_ID/send` |
-| Receive shipment | `POST` | `/api/v1/shipments/SHIPMENT_ID/receive` |
-
-List filters: `?supplyRequestId=REQUEST_ID` · `?status=SENT`
-
----
-
-**Prepare shipment**  
-From an approved supply request. Assign batches and sent quantities at source.
-
-`POST /api/v1/shipments`
-
-```json
-{
-  "supplyRequestId": "SUPPLY_REQUEST_ID",
-  "items": [
-    {
-      "drugId": "DRUG_ID",
-      "batchId": "BATCH_ID",
-      "sentQuantity": 50
-    }
-  ]
-}
-```
-
----
-
-**Send shipment**  
-Dispatches goods. Stock **out** at source (warehouse must have enough qty).
-
-`POST /api/v1/shipments/SHIPMENT_ID/send`
-
----
-
-**Receive shipment**  
-Confirms arrival. Stock **in** at destination. Received qty can be less than sent.
-
-`POST /api/v1/shipments/SHIPMENT_ID/receive`
-
-```json
-{
-  "items": [
-    {
-      "drugId": "DRUG_ID",
-      "batchId": "BATCH_ID",
-      "receivedQuantity": 45
-    }
-  ]
-}
-```
-
-Shortage is recorded automatically (`sentQuantity - receivedQuantity`).
-
-Shipment statuses: `PREPARED` → `SENT` → `PARTIALLY_RECEIVED` | `RECEIVED`
-
----
-
-### Full test flow (Postman)
-
-| Step | Postman request name |
-|---|---|
-| 1 | Add stock at warehouse (`POST /stock-movements` — direction `in`) |
-| 2 | **Request supply — pharmacy to warehouse** |
-| 3 | **Approve supply request** |
-| 4 | **Prepare shipment** |
-| 5 | **Send shipment** → check warehouse inventory down |
-| 6 | **Receive shipment** → check pharmacy inventory up |
-
-List filters:
-- `GET /api/v1/supply-requests?status=APPROVED`
-- `GET /api/v1/shipments?supplyRequestId=REQUEST_ID`
-
-Permissions:
-- create/cancel requests: pharmacy & warehouse employees/managers
-- approve/reject: managers + pharmacy admin
-- create/send shipments: warehouse side
-- receive shipments: destination side (pharmacy or warehouse)
-
----
-
-## Purchasing
-
-**Workflow:** supplier → purchase request → approve → purchase order → receive (batches + stock in + invoice)
-
-Warehouse manager with `unitCost` on each item gets **auto-approve** and a purchase order on create.
-
-### Suppliers
-
-Postman folder: **Suppliers**
-
-| Postman request name | Method | URL |
-|---|---|---|
-| List suppliers | `GET` | `/api/v1/suppliers` |
-| Get supplier by ID | `GET` | `/api/v1/suppliers/SUPPLIER_ID` |
-| Register supplier | `POST` | `/api/v1/suppliers` |
-| Update supplier | `PATCH` | `/api/v1/suppliers/SUPPLIER_ID` |
-| Deactivate supplier | `POST` | `/api/v1/suppliers/SUPPLIER_ID/deactivate` |
-
-**Register supplier**
-
-`POST /api/v1/suppliers`
-
+**D2**
 ```json
 {
   "name": "MedSupply Co.",
@@ -717,157 +226,32 @@ Postman folder: **Suppliers**
   "address": "Industrial Zone"
 }
 ```
+Save → `supplierId`
 
-Copy `id` from response → use as `SUPPLIER_ID`.
-
-List search: `GET /api/v1/suppliers?search=med`
-
----
-
-### Purchase requests
-
-Postman folder: **Purchase Requests**
-
-| Postman request name | Method | URL |
-|---|---|---|
-| List purchase requests | `GET` | `/api/v1/purchase-requests` |
-| Get purchase request by ID | `GET` | `/api/v1/purchase-requests/REQUEST_ID` |
-| Create purchase request | `POST` | `/api/v1/purchase-requests` |
-| Approve purchase request | `POST` | `/api/v1/purchase-requests/REQUEST_ID/approve` |
-| Reject purchase request | `POST` | `/api/v1/purchase-requests/REQUEST_ID/reject` |
-| Cancel purchase request | `POST` | `/api/v1/purchase-requests/REQUEST_ID/cancel` |
-
-**Where to get IDs**
-
-| Field | Source |
-|---|---|
-| `warehouseId` | `GET /api/v1/warehouses` → `data.items[].id` |
-| `supplierId` | `GET /api/v1/suppliers` → `data.items[].id` |
-| `drugId` | `GET /api/v1/drugs` → `data.items[].id` |
-
----
-
-**Create purchase request — employee** (needs manager approval)
-
-`POST /api/v1/purchase-requests`
-
+**D3** (admin/manager with `unitCost` → auto creates purchase order)
 ```json
 {
-  "warehouseId": "WAREHOUSE_ID",
-  "supplierId": "SUPPLIER_ID",
-  "items": [
-    { "drugId": "DRUG_ID", "requestedQuantity": 100 }
-  ]
-}
-```
-
----
-
-**Create purchase request — manager** (auto-approve if `unitCost` on every item)
-
-```json
-{
-  "warehouseId": "WAREHOUSE_ID",
-  "supplierId": "SUPPLIER_ID",
+  "warehouseId": "{{warehouseId}}",
+  "supplierId": "{{supplierId}}",
   "items": [
     {
-      "drugId": "DRUG_ID",
+      "drugId": "{{drugId}}",
       "requestedQuantity": 100,
       "unitCost": 1200
     }
   ]
 }
 ```
+Save `data.purchaseOrder.id` → `purchaseOrderId`
 
-Response includes `purchaseOrder` with `id` and `orderNumber` when auto-approved.
-
----
-
-**Approve purchase request** (creates purchase order — inventory **not** changed yet)
-
-`POST /api/v1/purchase-requests/REQUEST_ID/approve`
-
+**D4**
 ```json
 {
-  "items": [
-    {
-      "drugId": "DRUG_ID",
-      "approvedQuantity": 100,
-      "unitCost": 1200,
-      "itemReason": ""
-    }
-  ]
-}
-```
-
-Use `itemReason` when `approvedQuantity` is reduced or `0`.
-
-Response: `{ request, purchaseOrder }` — copy `purchaseOrder.id` for receiving.
-
----
-
-**Reject purchase request**
-
-`POST /api/v1/purchase-requests/REQUEST_ID/reject`
-
-```json
-{
-  "rejectionReason": "Supplier cannot fulfill this order"
-}
-```
-
----
-
-**Cancel purchase request** (while `PENDING_APPROVAL` only)
-
-`POST /api/v1/purchase-requests/REQUEST_ID/cancel`
-
----
-
-### Purchase orders
-
-Postman folder: **Purchase Orders**
-
-| Postman request name | Method | URL |
-|---|---|---|
-| List purchase orders | `GET` | `/api/v1/purchase-orders` |
-| Get purchase order by ID | `GET` | `/api/v1/purchase-orders/ORDER_ID` |
-
-Created automatically on approval — no manual create endpoint.
-
-List filters: `?status=OPEN` · `?warehouseId=...` · `?supplierId=...`
-
-Statuses: `OPEN` → `PARTIALLY_RECEIVED` → `RECEIVED`
-
----
-
-### Purchase receipts and invoices
-
-Postman folder: **Purchase Receipts**
-
-| Postman request name | Method | URL |
-|---|---|---|
-| Receive purchase | `POST` | `/api/v1/purchase-receipts` |
-| List purchase receipts | `GET` | `/api/v1/purchase-receipts` |
-| Get purchase receipt by ID | `GET` | `/api/v1/purchase-receipts/RECEIPT_ID` |
-| List purchase invoices | `GET` | `/api/v1/purchase-invoices` |
-| Get purchase invoice by ID | `GET` | `/api/v1/purchase-invoices/INVOICE_ID` |
-
-Receiving creates **receipt + invoice + stock in** in one atomic step.
-
----
-
-**Receive purchase — new batch**
-
-`POST /api/v1/purchase-receipts`
-
-```json
-{
-  "purchaseOrderId": "ORDER_ID",
+  "purchaseOrderId": "{{purchaseOrderId}}",
   "invoiceNumber": "INV-2026-0001",
   "items": [
     {
-      "drugId": "DRUG_ID",
+      "drugId": "{{drugId}}",
       "batchNumber": "BN2026-100",
       "expiryDate": "2027-12-31",
       "quantity": 100,
@@ -876,208 +260,117 @@ Receiving creates **receipt + invoice + stock in** in one atomic step.
   ]
 }
 ```
+Save `data.receipt.items[0].batchId` → `batchId`
+
+Expected: warehouse stock = 100.
 
 ---
 
-**Receive purchase — existing batch**
+### Phase E — Supply to pharmacy
 
+| # | Request name | Method | URL |
+|---|---|---|---|
+| E1 | Request supply (pharmacy → warehouse) | `POST` | `{{baseUrl}}/api/v1/supply-requests/pharmacy` |
+| E2 | Approve supply request | `POST` | `{{baseUrl}}/api/v1/supply-requests/{{supplyRequestId}}/approve` |
+| E3 | Prepare shipment | `POST` | `{{baseUrl}}/api/v1/shipments` |
+| E4 | Send shipment | `POST` | `{{baseUrl}}/api/v1/shipments/{{shipmentId}}/send` |
+| E5 | Receive shipment | `POST` | `{{baseUrl}}/api/v1/shipments/{{shipmentId}}/receive` |
+| E6 | Check pharmacy inventory | `GET` | `{{baseUrl}}/api/v1/inventory?locationType=pharmacy&locationId={{pharmacyId}}` |
+
+**E1**
 ```json
 {
-  "purchaseOrderId": "ORDER_ID",
-  "invoiceNumber": "INV-2026-0002",
+  "pharmacyId": "{{pharmacyId}}",
+  "items": [
+    { "drugId": "{{drugId}}", "requestedQuantity": 50 }
+  ]
+}
+```
+Save → `supplyRequestId`
+
+**E2**
+```json
+{
   "items": [
     {
-      "drugId": "DRUG_ID",
-      "batchId": "BATCH_ID",
-      "quantity": 50,
-      "unitCost": 1200
+      "drugId": "{{drugId}}",
+      "approvedQuantity": 50,
+      "itemReason": ""
     }
   ]
 }
 ```
 
-Same drug can appear on multiple lines with different batches.
-
-Response: `{ receipt, invoice }` — stock is now in warehouse inventory.
-
----
-
-### Full purchasing test flow (Postman)
-
-| Step | Postman request name |
-|---|---|
-| 1 | **Register supplier** |
-| 2 | **Create purchase request** (manager with `unitCost` → auto PO) |
-| 3 | Or **Approve purchase request** if employee created it |
-| 4 | **Get purchase order by ID** — confirm `status: OPEN` |
-| 5 | **Receive purchase** — new or existing batch |
-| 6 | **List purchase invoices** |
-| 7 | `GET /api/v1/inventory?locationType=warehouse&locationId=WAREHOUSE_ID` — verify stock |
-
----
-
-### Common errors
-
-| Code | Meaning | Fix |
-|---|---|---|
-| `INVALID_SUPPLIER` | Supplier missing or inactive | Register/activate supplier first |
-| `ITEM_REASON_REQUIRED` | Reduced/rejected item without reason | Add `itemReason` on approve |
-| `PURCHASE_ORDER_NOT_FOUND` | Bad order id | Use id from approve/auto-approve response |
-| `EXCEEDS_ORDERED_QUANTITY` | Receive qty too high | Check remaining on purchase order |
-| `INVOICE_IN_USE` | Duplicate `invoiceNumber` | Use a unique invoice number |
-| `INVALID_ORDER_STATUS` | PO already fully received | List orders and pick an `OPEN` one |
-
----
-
-### Permissions
-
-- suppliers manage: System Admin, Pharmacy Admin, Warehouse Manager
-- create/cancel purchase requests: warehouse employees/managers
-- approve/reject: warehouse manager, pharmacy admin
-- receive purchase: warehouse employees/managers
-- read invoices/orders: warehouse roles + pharmacist (read suppliers/orders)
-
----
-
-## Sales and Pricing
-
-**Workflow:** payment method → stock at pharmacy → create sales invoice (FEFO stock out + immutable invoice)
-
-Prices are **uniform across pharmacies**. Use the dedicated selling-price endpoint — not `PATCH /drugs/:id`.
-
-### Payment methods
-
-Postman folder: **Payment Methods**
-
-| Postman request name | Method | URL |
-|---|---|---|
-| List payment methods | `GET` | `/api/v1/payment-methods` |
-| Get payment method by ID | `GET` | `/api/v1/payment-methods/PAYMENT_METHOD_ID` |
-| Create payment method | `POST` | `/api/v1/payment-methods` |
-| Update payment method | `PATCH` | `/api/v1/payment-methods/PAYMENT_METHOD_ID` |
-| Deactivate payment method | `POST` | `/api/v1/payment-methods/PAYMENT_METHOD_ID/deactivate` |
-
-**Create payment method** (System Admin only)
-
-`POST /api/v1/payment-methods`
-
+**E3**
 ```json
 {
-  "name": "Cash",
-  "code": "CASH"
+  "supplyRequestId": "{{supplyRequestId}}",
+  "items": [
+    {
+      "drugId": "{{drugId}}",
+      "batchId": "{{batchId}}",
+      "sentQuantity": 50
+    }
+  ]
+}
+```
+Save → `shipmentId`
+
+**E4** — empty body
+
+**E5**
+```json
+{
+  "items": [
+    {
+      "drugId": "{{drugId}}",
+      "batchId": "{{batchId}}",
+      "receivedQuantity": 50
+    }
+  ]
 }
 ```
 
-Copy `id` from response → use as `PAYMENT_METHOD_ID`.
+Expected: pharmacy stock = 50, warehouse stock = 50.
 
 ---
 
-### Selling prices and history
+### Phase F — Sales
 
-Postman folder: **Drugs — Pricing**
+| # | Request name | Method | URL |
+|---|---|---|---|
+| F1 | Create sales invoice (FEFO) | `POST` | `{{baseUrl}}/api/v1/sales-invoices` |
+| F2 | List sales invoices | `GET` | `{{baseUrl}}/api/v1/sales-invoices` |
+| F3 | Get sales invoice | `GET` | `{{baseUrl}}/api/v1/sales-invoices/{{salesInvoiceId}}` |
+| F4 | Check pharmacy inventory after sale | `GET` | `{{baseUrl}}/api/v1/inventory?locationType=pharmacy&locationId={{pharmacyId}}` |
 
-| Postman request name | Method | URL |
-|---|---|---|
-| Update selling price | `PATCH` | `/api/v1/drugs/DRUG_ID/selling-price` |
-| List price history | `GET` | `/api/v1/drugs/DRUG_ID/price-history` |
-
-**Update selling price** (Manager / Pharmacy Admin / System Admin)
-
-`PATCH /api/v1/drugs/DRUG_ID/selling-price`
-
+**F1**
 ```json
 {
-  "sellingPrice": 1800
-}
-```
-
-Creates a price history record. Regular `PATCH /drugs/:id` rejects `sellingPrice` with `USE_PRICE_ENDPOINT`.
-
-**List price history**
-
-`GET /api/v1/drugs/DRUG_ID/price-history?page=1&limit=20`
-
-New drugs also get an initial history entry on create.
-
----
-
-### Sales invoices
-
-Postman folder: **Sales Invoices**
-
-| Postman request name | Method | URL |
-|---|---|---|
-| List sales invoices | `GET` | `/api/v1/sales-invoices` |
-| Get sales invoice by ID | `GET` | `/api/v1/sales-invoices/INVOICE_ID` |
-| Create sales invoice | `POST` | `/api/v1/sales-invoices` |
-
-Invoices are **immutable** after creation (read-only).
-
-**Where to get IDs**
-
-| Field | Source |
-|---|---|
-| `pharmacyId` | `GET /api/v1/pharmacies` → `data.items[].id` |
-| `paymentMethodId` | `GET /api/v1/payment-methods` → `data.items[].id` |
-| `drugId` | `GET /api/v1/drugs` → `data.items[].id` |
-| `batchId` (optional override) | `GET /api/v1/batches/fefo/DRUG_ID` or inventory list |
-
-**Prerequisite:** pharmacy must have stock. Move stock in via shipment receive or manual `POST /stock-movements` (`locationType: pharmacy`, `direction: in`).
-
----
-
-**Create sales invoice — FEFO** (auto-picks earliest-expiry batches)
-
-`POST /api/v1/sales-invoices`
-
-```json
-{
-  "pharmacyId": "PHARMACY_ID",
-  "paymentMethodId": "PAYMENT_METHOD_ID",
+  "pharmacyId": "{{pharmacyId}}",
+  "paymentMethodId": "{{paymentMethodId}}",
   "customer": {
     "name": "Ahmad Ali",
     "nationalId": ""
   },
   "items": [
     {
-      "drugId": "DRUG_ID",
+      "drugId": "{{drugId}}",
       "quantity": 2
     }
   ]
 }
 ```
+Save → `salesInvoiceId`
 
-Invoice number is auto-generated (`SALE-YYYYMMDD-0001`). Unit price is snapshotted from the drug's current `sellingPrice`.
-
----
-
-**Create sales invoice — batch override**
-
+Optional discount (manager/admin only):
 ```json
 {
-  "pharmacyId": "PHARMACY_ID",
-  "paymentMethodId": "PAYMENT_METHOD_ID",
+  "pharmacyId": "{{pharmacyId}}",
+  "paymentMethodId": "{{paymentMethodId}}",
   "items": [
     {
-      "drugId": "DRUG_ID",
-      "batchId": "BATCH_ID",
-      "quantity": 1
-    }
-  ]
-}
-```
-
----
-
-**Create sales invoice — with discount** (Manager / Pharmacy Admin / System Admin only)
-
-```json
-{
-  "pharmacyId": "PHARMACY_ID",
-  "paymentMethodId": "PAYMENT_METHOD_ID",
-  "items": [
-    {
-      "drugId": "DRUG_ID",
+      "drugId": "{{drugId}}",
       "quantity": 2,
       "discountType": "PERCENTAGE",
       "discountValue": 10
@@ -1086,311 +379,438 @@ Invoice number is auto-generated (`SALE-YYYYMMDD-0001`). Unit price is snapshott
 }
 ```
 
-`discountType`: `PERCENTAGE` or `FIXED`.
-
-Employees/pharmacists without discount permission get `DISCOUNT_FORBIDDEN`.
+Expected: pharmacy stock decreased by 2.
 
 ---
 
-### Full sales test flow (Postman)
+### Phase G — Returns / destruction / adjustment
 
-| Step | Postman request name |
-|---|---|
-| 1 | **Create payment method** (admin) |
-| 2 | Confirm pharmacy stock — `GET /api/v1/inventory?locationType=pharmacy&locationId=PHARMACY_ID` |
-| 3 | If empty: receive shipment or **Create stock movement** (in, pharmacy) |
-| 4 | **Create sales invoice** — FEFO |
-| 5 | **List sales invoices** |
-| 6 | `GET /api/v1/inventory?...` — verify stock decreased |
-| 7 | Optional: **Update selling price** + **List price history** |
+| # | Request name | Method | URL |
+|---|---|---|---|
+| G1 | Create customer return | `POST` | `{{baseUrl}}/api/v1/customer-returns` |
+| G2 | Create pharmacy return | `POST` | `{{baseUrl}}/api/v1/pharmacy-returns` |
+| G3 | Send pharmacy return | `POST` | `{{baseUrl}}/api/v1/pharmacy-returns/{{pharmacyReturnId}}/send` |
+| G4 | Receive pharmacy return | `POST` | `{{baseUrl}}/api/v1/pharmacy-returns/{{pharmacyReturnId}}/receive` |
+| G5 | Create supplier return | `POST` | `{{baseUrl}}/api/v1/supplier-returns` |
+| G6 | Record destruction | `POST` | `{{baseUrl}}/api/v1/destructions` |
+| G7 | Create inventory adjustment | `POST` | `{{baseUrl}}/api/v1/inventory-adjustments` |
 
----
-
-### Common errors
-
-| Code | Meaning | Fix |
-|---|---|---|
-| `INSUFFICIENT_STOCK` | Not enough stock at pharmacy | Add stock first |
-| `INVALID_PAYMENT_METHOD` | Payment method missing/inactive | Create or pick active method |
-| `DISCOUNT_FORBIDDEN` | Discount without permission | Remove discount or use manager account |
-| `USE_PRICE_ENDPOINT` | Tried `sellingPrice` on drug PATCH | Use `/selling-price` endpoint |
-| `PRICE_UNCHANGED` | Same price submitted | Send a different value |
-| `BATCH_DRUG_MISMATCH` | Batch belongs to another drug | Pick correct batch |
-
----
-
-### Permissions
-
-- payment methods manage: System Admin only
-- payment methods read + sales create/read: pharmacist, pharmacy employee, pharmacy manager, pharmacy admin
-- update selling price + apply discount: pharmacy manager, pharmacy admin, system admin
-
----
-
-## Returns, Destruction, and Corrections
-
-**Note:** `POST /api/v1/stock-movements` no longer accepts domain types (`CUSTOMER_RETURN`, `DESTRUCTION`, `INVENTORY_ADJUSTMENT`, etc.). Use the dedicated endpoints below.
-
-### Inventory adjustments
-
-Postman folder: **Inventory Adjustments**
-
-| Postman request name | Method | URL |
-|---|---|---|
-| List inventory adjustments | `GET` | `/api/v1/inventory-adjustments` |
-| Get inventory adjustment by ID | `GET` | `/api/v1/inventory-adjustments/ADJUSTMENT_ID` |
-| Create inventory adjustment | `POST` | `/api/v1/inventory-adjustments` |
-
-`POST /api/v1/inventory-adjustments`
-
+**G1** (use drugId + batchId from the sales invoice items)
 ```json
 {
-  "locationType": "pharmacy",
-  "locationId": "PHARMACY_ID",
-  "reason": "Physical count correction",
+  "salesInvoiceId": "{{salesInvoiceId}}",
   "items": [
     {
-      "drugId": "DRUG_ID",
-      "batchId": "BATCH_ID",
-      "quantity": 5,
-      "direction": "in"
-    }
-  ]
-}
-```
-
-`direction`: `in` or `out`.
-
----
-
-### Destructions
-
-Postman folder: **Destructions**
-
-| Postman request name | Method | URL |
-|---|---|---|
-| List destructions | `GET` | `/api/v1/destructions` |
-| Get destruction by ID | `GET` | `/api/v1/destructions/DESTRUCTION_ID` |
-| Record destruction | `POST` | `/api/v1/destructions` |
-
-```json
-{
-  "locationType": "warehouse",
-  "locationId": "WAREHOUSE_ID",
-  "reason": "Expired and unsellable",
-  "items": [
-    {
-      "drugId": "DRUG_ID",
-      "batchId": "BATCH_ID",
-      "quantity": 10
-    }
-  ]
-}
-```
-
----
-
-### Customer returns
-
-Postman folder: **Customer Returns**
-
-| Postman request name | Method | URL |
-|---|---|---|
-| List customer returns | `GET` | `/api/v1/customer-returns` |
-| Get customer return by ID | `GET` | `/api/v1/customer-returns/RETURN_ID` |
-| Create customer return | `POST` | `/api/v1/customer-returns` |
-
-Must link to an existing **sales invoice** from the same pharmacy. Items must match invoice lines (drug + batch).
-
-```json
-{
-  "salesInvoiceId": "INVOICE_ID",
-  "items": [
-    {
-      "drugId": "DRUG_ID",
-      "batchId": "BATCH_ID",
+      "drugId": "{{drugId}}",
+      "batchId": "{{batchId}}",
       "quantity": 1
     }
   ]
 }
 ```
 
-Stock goes **in** at the pharmacy atomically.
-
----
-
-### Supplier returns
-
-Postman folder: **Supplier Returns**
-
-| Postman request name | Method | URL |
-|---|---|---|
-| List supplier returns | `GET` | `/api/v1/supplier-returns` |
-| Get supplier return by ID | `GET` | `/api/v1/supplier-returns/RETURN_ID` |
-| Create supplier return | `POST` | `/api/v1/supplier-returns` |
-
-Batch must have been **purchased from that supplier** at that warehouse.
-
+**G2**
 ```json
 {
-  "warehouseId": "WAREHOUSE_ID",
-  "supplierId": "SUPPLIER_ID",
-  "reason": "Damaged on arrival",
-  "items": [
-    {
-      "drugId": "DRUG_ID",
-      "batchId": "BATCH_ID",
-      "quantity": 20
-    }
-  ]
-}
-```
-
----
-
-### Pharmacy returns
-
-Postman folder: **Pharmacy Returns**
-
-| Postman request name | Method | URL |
-|---|---|---|
-| List pharmacy returns | `GET` | `/api/v1/pharmacy-returns` |
-| Get pharmacy return by ID | `GET` | `/api/v1/pharmacy-returns/RETURN_ID` |
-| Create pharmacy return | `POST` | `/api/v1/pharmacy-returns` |
-| Send pharmacy return | `POST` | `/api/v1/pharmacy-returns/RETURN_ID/send` |
-| Receive pharmacy return | `POST` | `/api/v1/pharmacy-returns/RETURN_ID/receive` |
-
-Returns go to the pharmacy's **primary warehouse only**. Batch must have been received from that warehouse via supply.
-
-**Create** (no inventory change yet):
-
-```json
-{
-  "pharmacyId": "PHARMACY_ID",
+  "pharmacyId": "{{pharmacyId}}",
   "reason": "Near expiry overstock",
   "items": [
     {
-      "drugId": "DRUG_ID",
-      "batchId": "BATCH_ID",
+      "drugId": "{{drugId}}",
+      "batchId": "{{batchId}}",
       "sentQuantity": 5
     }
   ]
 }
 ```
+Save → `pharmacyReturnId`
 
-**Send** — stock out at pharmacy.
+**G3** — empty body
 
-**Receive** — stock in at warehouse:
-
+**G4**
 ```json
 {
   "items": [
     {
-      "drugId": "DRUG_ID",
-      "batchId": "BATCH_ID",
+      "drugId": "{{drugId}}",
+      "batchId": "{{batchId}}",
       "receivedQuantity": 5
     }
   ]
 }
 ```
 
+**G5**
+```json
+{
+  "warehouseId": "{{warehouseId}}",
+  "supplierId": "{{supplierId}}",
+  "reason": "Damaged on arrival",
+  "items": [
+    {
+      "drugId": "{{drugId}}",
+      "batchId": "{{batchId}}",
+      "quantity": 5
+    }
+  ]
+}
+```
+
+**G6**
+```json
+{
+  "locationType": "warehouse",
+  "locationId": "{{warehouseId}}",
+  "reason": "Expired and unsellable",
+  "items": [
+    {
+      "drugId": "{{drugId}}",
+      "batchId": "{{batchId}}",
+      "quantity": 1
+    }
+  ]
+}
+```
+
+**G7**
+```json
+{
+  "locationType": "pharmacy",
+  "locationId": "{{pharmacyId}}",
+  "reason": "Physical count correction",
+  "items": [
+    {
+      "drugId": "{{drugId}}",
+      "batchId": "{{batchId}}",
+      "quantity": 1,
+      "direction": "in"
+    }
+  ]
+}
+```
+
+---
+
+### Phase H — Pricing, notifications, audit, reports
+
+| # | Request name | Method | URL |
+|---|---|---|---|
+| H1 | Update selling price | `PATCH` | `{{baseUrl}}/api/v1/drugs/{{drugId}}/selling-price` |
+| H2 | List price history | `GET` | `{{baseUrl}}/api/v1/drugs/{{drugId}}/price-history` |
+| H3 | Run alert scan | `POST` | `{{baseUrl}}/api/v1/notifications/run-alerts` |
+| H4 | List notifications | `GET` | `{{baseUrl}}/api/v1/notifications?status=UNREAD` |
+| H5 | List audit logs | `GET` | `{{baseUrl}}/api/v1/audit-logs` |
+| H5b | Export audit logs to Excel | `GET` | `{{baseUrl}}/api/v1/audit-logs/export` |
+| H6 | Sales report | `GET` | `{{baseUrl}}/api/v1/reports/sales` |
+| H7 | Inventory report | `GET` | `{{baseUrl}}/api/v1/reports/inventory?locationType=pharmacy&locationId={{pharmacyId}}` |
+| H8 | Near-expiry report | `GET` | `{{baseUrl}}/api/v1/reports/near-expiry?days=30` |
+| H9 | Best-selling drugs | `GET` | `{{baseUrl}}/api/v1/reports/best-selling-drugs?limit=10` |
+| H10 | Logout | `POST` | `{{baseUrl}}/api/v1/auth/logout` |
+
+**H1**
+```json
+{
+  "sellingPrice": 1800
+}
+```
+
+**H3 / H10** — empty body
+
+**H5b** — returns an Excel file (not JSON). In Postman: **Send and Download**. Same filters as list (`action`, `userId`, `entityType`, `entityId`).
+
+---
+
+## FULL ENDPOINT REFERENCE
+
+Use `{{baseUrl}}` + path below. Auth cookies required except Health and Login.
+
+### Auth
+
+| Request name | Method | Path | Body |
+|---|---|---|---|
+| Health check | `GET` | `/api/v1/health` | — |
+| Login | `POST` | `/api/v1/auth/login` | `{ "email", "password" }` |
+| Refresh | `POST` | `/api/v1/auth/refresh` | empty |
+| Logout | `POST` | `/api/v1/auth/logout` | empty |
+| Current user | `GET` | `/api/v1/auth/me` | — |
+
+### Users
+
+| Request name | Method | Path |
+|---|---|---|
+| List users | `GET` | `/api/v1/users?page=1&limit=20` |
+| Create user | `POST` | `/api/v1/users` |
+| Get user | `GET` | `/api/v1/users/:id` |
+| Update user | `PATCH` | `/api/v1/users/:id` |
+| Deactivate user | `POST` | `/api/v1/users/:id/deactivate` |
+
+Create user example:
+```json
+{
+  "firstName": "Sara",
+  "lastName": "Hassan",
+  "email": "sara.hassan@example.com",
+  "password": "Password123",
+  "role": "PHARMACY_MANAGER",
+  "pharmacyIds": ["{{pharmacyId}}"],
+  "warehouseIds": []
+}
+```
+
+Roles: `SYSTEM_ADMIN`, `PHARMACY_ADMIN`, `PHARMACY_MANAGER`, `WAREHOUSE_MANAGER`, `PHARMACIST`, `PHARMACY_EMPLOYEE`, `WAREHOUSE_EMPLOYEE`
+
+### Warehouses / Pharmacies
+
+| Request name | Method | Path |
+|---|---|---|
+| List warehouses | `GET` | `/api/v1/warehouses` |
+| Create warehouse | `POST` | `/api/v1/warehouses` |
+| Get warehouse | `GET` | `/api/v1/warehouses/:id` |
+| Update warehouse | `PATCH` | `/api/v1/warehouses/:id` |
+| Deactivate warehouse | `POST` | `/api/v1/warehouses/:id/deactivate` |
+| List pharmacies | `GET` | `/api/v1/pharmacies` |
+| Create pharmacy | `POST` | `/api/v1/pharmacies` |
+| Get pharmacy | `GET` | `/api/v1/pharmacies/:id` |
+| Update pharmacy | `PATCH` | `/api/v1/pharmacies/:id` |
+| Deactivate pharmacy | `POST` | `/api/v1/pharmacies/:id/deactivate` |
+
+### Catalog
+
+| Request name | Method | Path |
+|---|---|---|
+| Categories CRUD | `GET/POST/PATCH` + deactivate | `/api/v1/categories` |
+| Manufacturers CRUD | `GET/POST/PATCH` + deactivate | `/api/v1/manufacturers` |
+| Active ingredients CRUD | `GET/POST/PATCH` + deactivate | `/api/v1/active-ingredients` |
+| Drugs CRUD | `GET/POST/PATCH` + deactivate | `/api/v1/drugs` |
+| Alternatives | `GET` | `/api/v1/drugs/by-active-ingredient/:activeIngredientId?page=1&limit=20` |
+| Update selling price | `PATCH` | `/api/v1/drugs/:id/selling-price` |
+| Price history | `GET` | `/api/v1/drugs/:id/price-history` |
+| Batches CRUD | `GET/POST/PATCH` + deactivate | `/api/v1/batches` |
+| FEFO batches | `GET` | `/api/v1/batches/fefo/:drugId` |
+
+Drug list filters: `?search=` `?categoryId=` `?activeIngredientId=`
+
+Do **not** send `sellingPrice` on `PATCH /drugs/:id` — use `/selling-price`.
+
+### Inventory (read-only)
+
+| Request name | Method | Path |
+|---|---|---|
+| List inventory | `GET` | `/api/v1/inventory?locationType=warehouse&locationId={{warehouseId}}` |
+| Inventory summary | `GET` | `/api/v1/inventory/summary?locationType=warehouse&locationId={{warehouseId}}&drugId={{drugId}}` |
+| Get inventory row | `GET` | `/api/v1/inventory/:id` |
+
+`locationType` must be `warehouse` or `pharmacy`.
+
+### Stock movements
+
+| Request name | Method | Path |
+|---|---|---|
+| List movements | `GET` | `/api/v1/stock-movements?locationType=warehouse&locationId={{warehouseId}}` |
+| Create movement | `POST` | `/api/v1/stock-movements` |
+| Get movement | `GET` | `/api/v1/stock-movements/:id` |
+
+Manual stock-in example (only for non-domain types like purchase/supply testing):
+```json
+{
+  "movementType": "PURCHASE_RECEIVING",
+  "direction": "in",
+  "drugId": "{{drugId}}",
+  "batchId": "{{batchId}}",
+  "quantity": 10,
+  "locationType": "warehouse",
+  "locationId": "{{warehouseId}}",
+  "reference": "manual-test"
+}
+```
+
+**Blocked on this endpoint** (use dedicated modules instead):
+`CUSTOMER_RETURN`, `RETURN_TO_WAREHOUSE`, `RETURN_FROM_PHARMACY`, `RETURN_TO_SUPPLIER`, `DESTRUCTION`, `INVENTORY_ADJUSTMENT`
+
+### Supply requests
+
+| Request name | Method | Path |
+|---|---|---|
+| List | `GET` | `/api/v1/supply-requests` |
+| Get | `GET` | `/api/v1/supply-requests/:id` |
+| Pharmacy → warehouse | `POST` | `/api/v1/supply-requests/pharmacy` |
+| Warehouse → warehouse | `POST` | `/api/v1/supply-requests/warehouse` |
+| Approve | `POST` | `/api/v1/supply-requests/:id/approve` |
+| Reject | `POST` | `/api/v1/supply-requests/:id/reject` |
+| Cancel | `POST` | `/api/v1/supply-requests/:id/cancel` |
+
+Warehouse → warehouse body:
+```json
+{
+  "sourceWarehouseId": "{{warehouseId}}",
+  "destinationWarehouseId": "OTHER_WAREHOUSE_ID",
+  "items": [
+    { "drugId": "{{drugId}}", "requestedQuantity": 20 }
+  ]
+}
+```
+
+Reject body:
+```json
+{ "rejectionReason": "Out of stock at warehouse" }
+```
+
+Statuses: `PENDING_APPROVAL` → `APPROVED` | `REJECTED` | `CANCELLED`
+
+### Shipments
+
+| Request name | Method | Path |
+|---|---|---|
+| List | `GET` | `/api/v1/shipments` |
+| Get | `GET` | `/api/v1/shipments/:id` |
+| Prepare | `POST` | `/api/v1/shipments` |
+| Send | `POST` | `/api/v1/shipments/:id/send` |
+| Receive | `POST` | `/api/v1/shipments/:id/receive` |
+
 Statuses: `PREPARED` → `SENT` → `PARTIALLY_RECEIVED` | `RECEIVED`
 
----
+### Purchasing
 
-### Full returns test flow (Postman)
-
-| Step | Postman request name |
-|---|---|
-| 1 | **Create sales invoice** (prerequisite for customer return) |
-| 2 | **Create customer return** |
-| 3 | **Create pharmacy return** → **Send** → **Receive** |
-| 4 | **Create supplier return** (after purchase receive) |
-| 5 | **Record destruction** or **Create inventory adjustment** |
-
----
-
-### Common errors
-
-| Code | Meaning | Fix |
+| Request name | Method | Path |
 |---|---|---|
-| `ITEM_NOT_ON_INVOICE` | Return item not on sales invoice | Match drug + batch from invoice |
-| `EXCEEDS_SOLD_QUANTITY` | Return qty too high | Check prior returns + sold qty |
-| `BATCH_NOT_FROM_WAREHOUSE` | Pharmacy return batch not from primary warehouse | Only return supply-received stock |
-| `BATCH_NOT_FROM_SUPPLIER` | Supplier return batch not purchased from supplier | Use batch from purchase receipt |
-| `INVALID_STATUS` | Wrong workflow step | Check return/shipment status |
-| `ITEM_MISMATCH` | Receive payload doesn't match all items | Include every line |
+| Suppliers CRUD + deactivate | | `/api/v1/suppliers` |
+| List purchase requests | `GET` | `/api/v1/purchase-requests` |
+| Create purchase request | `POST` | `/api/v1/purchase-requests` |
+| Approve | `POST` | `/api/v1/purchase-requests/:id/approve` |
+| Reject | `POST` | `/api/v1/purchase-requests/:id/reject` |
+| Cancel | `POST` | `/api/v1/purchase-requests/:id/cancel` |
+| List purchase orders | `GET` | `/api/v1/purchase-orders` |
+| Get purchase order | `GET` | `/api/v1/purchase-orders/:id` |
+| Receive purchase | `POST` | `/api/v1/purchase-receipts` |
+| List receipts | `GET` | `/api/v1/purchase-receipts` |
+| List invoices | `GET` | `/api/v1/purchase-invoices` |
 
----
+Employee create (needs approve):
+```json
+{
+  "warehouseId": "{{warehouseId}}",
+  "supplierId": "{{supplierId}}",
+  "items": [
+    { "drugId": "{{drugId}}", "requestedQuantity": 100 }
+  ]
+}
+```
 
-### Permissions
+Approve:
+```json
+{
+  "items": [
+    {
+      "drugId": "{{drugId}}",
+      "approvedQuantity": 100,
+      "unitCost": 1200,
+      "itemReason": ""
+    }
+  ]
+}
+```
 
-- customer returns: pharmacist, pharmacy employee, pharmacy manager, pharmacy admin
-- pharmacy returns create/send: pharmacy roles; receive: warehouse roles
-- supplier returns: warehouse roles
-- destruction: pharmacy + warehouse employees/managers
-- inventory adjustments create: pharmacy manager, warehouse manager, admins
+PO statuses: `OPEN` → `PARTIALLY_RECEIVED` → `RECEIVED`
 
----
+### Sales
 
-## Notifications and Audit
-
-### Notifications
-
-Postman folder: **Notifications**
-
-| Postman request name | Method | URL |
+| Request name | Method | Path |
 |---|---|---|
-| List my notifications | `GET` | `/api/v1/notifications` |
-| Get unread count | `GET` | `/api/v1/notifications/unread-count` |
-| Mark notification read | `PATCH` | `/api/v1/notifications/NOTIFICATION_ID/read` |
+| Payment methods CRUD + deactivate | | `/api/v1/payment-methods` |
+| List sales invoices | `GET` | `/api/v1/sales-invoices` |
+| Create sales invoice | `POST` | `/api/v1/sales-invoices` |
+| Get sales invoice | `GET` | `/api/v1/sales-invoices/:id` |
+
+Sales invoices are immutable after create.
+
+### Returns / destruction / adjustments
+
+| Request name | Method | Path |
+|---|---|---|
+| Customer returns list/create/get | | `/api/v1/customer-returns` |
+| Pharmacy returns list/create/get/send/receive | | `/api/v1/pharmacy-returns` |
+| Supplier returns list/create/get | | `/api/v1/supplier-returns` |
+| Destructions list/create/get | | `/api/v1/destructions` |
+| Inventory adjustments list/create/get | | `/api/v1/inventory-adjustments` |
+
+### Notifications / audit / reports
+
+| Request name | Method | Path |
+|---|---|---|
+| List notifications | `GET` | `/api/v1/notifications` |
+| Unread count | `GET` | `/api/v1/notifications/unread-count` |
+| Mark one read | `PATCH` | `/api/v1/notifications/:id/read` |
 | Mark all read | `POST` | `/api/v1/notifications/mark-all-read` |
-| Run alert scan | `POST` | `/api/v1/notifications/run-alerts` |
+| Run alerts | `POST` | `/api/v1/notifications/run-alerts` |
+| List audit logs | `GET` | `/api/v1/audit-logs` |
+| Export audit logs to Excel | `GET` | `/api/v1/audit-logs/export` |
+| Get audit log | `GET` | `/api/v1/audit-logs/:id` |
+| Sales report | `GET` | `/api/v1/reports/sales` |
+| Best-selling | `GET` | `/api/v1/reports/best-selling-drugs?limit=10` |
+| Purchases report | `GET` | `/api/v1/reports/purchases` |
+| Stock movements report | `GET` | `/api/v1/reports/stock-movements` |
+| Inventory report | `GET` | `/api/v1/reports/inventory` |
+| Near expiry | `GET` | `/api/v1/reports/near-expiry?days=30` |
+| Expired | `GET` | `/api/v1/reports/expired` |
 
-List filters: `?status=UNREAD` · `?type=LOW_STOCK`
-
-Response includes `unreadTotal` on list.
-
-**Run alert scan** (managers/admins) — checks all inventory for low stock and all batches for near/expiry:
-
-`POST /api/v1/notifications/run-alerts`
-
-Response: `{ lowStockCreated, expiryCreated, totalCreated }`
+Report filters (when relevant): `from`, `to`, `pharmacyId`, `warehouseId`, `locationType`, `locationId`, `drugId`, `categoryId`, `supplierId`, `userId`
 
 Notification types: `LOW_STOCK`, `NEAR_EXPIRY`, `EXPIRED`, `SUPPLY_REQUEST`, `SHIPMENT`, `PURCHASE_REQUEST`
 
-SMS is logged via console adapter (replaceable). Managers get SMS records for low stock and expired alerts.
+### Audit logs (read + Excel export)
 
----
-
-### Audit logs
-
-Postman folder: **Audit Logs**
-
-| Postman request name | Method | URL |
+| Request name | Method | Path |
 |---|---|---|
-| List audit logs | `GET` | `/api/v1/audit-logs` |
+| List audit logs | `GET` | `/api/v1/audit-logs?page=1&limit=20` |
 | Export audit logs to Excel | `GET` | `/api/v1/audit-logs/export` |
-| Get audit log by ID | `GET` | `/api/v1/audit-logs/LOG_ID` |
+| Get audit log by ID | `GET` | `/api/v1/audit-logs/:id` |
 
-Filters: `?action=auth.login` · `?userId=...` · `?entityType=SalesInvoice` · `?entityId=...` (the Excel export supports these same filters and exports every matching log)
+Filters (list + export): `?action=auth.login` · `?userId=...` · `?entityType=SalesInvoice` · `?entityId=...`
 
-Read-only. Logs auto-delete after **90 days** (MongoDB TTL).
-
-Logged automatically for: login, user changes, stock movements, sales, purchases, supply/shipment workflows, price updates, returns, destruction, adjustments.
+- Permission: `audit-logs.read` (managers + system admin)
+- Export returns a `.xlsx` file (`audit-logs-YYYY-MM-DD.xlsx`), not JSON — in Postman use **Send and Download**
+- Export has no pagination: it downloads **every** matching log (up to 90-day TTL retention)
+- Excel columns: Log ID, User ID, Action, Entity Type, Entity ID, Metadata, Created At
+- Read-only; logs auto-delete after **90 days** (MongoDB TTL)
 
 ---
 
-### Config (optional env)
+## COMMON ERRORS
 
-| Variable | Default | Purpose |
+| Code | Meaning | Fix |
 |---|---|---|
-| `EXPIRY_ALERT_DAYS` | `30` | Near-expiry lead time |
-| `AUDIT_LOG_RETENTION_DAYS` | `90` | Audit TTL |
+| `UNAUTHENTICATED` | Not logged in / cookie missing | Login again; enable cookies |
+| `FORBIDDEN` | Role or location scope blocked | Use admin or linked user |
+| `VALIDATION_ERROR` | Bad body/query | Check required fields and 24-hex ids |
+| `INSUFFICIENT_STOCK` | Not enough qty | Add stock first |
+| `INVALID_DRUG` / `INVALID_BATCH` | Missing/inactive | Use live ids |
+| `BATCH_DRUG_MISMATCH` | Batch ≠ drug | Match batch to drug |
+| `ITEM_REASON_REQUIRED` | Reduced approve qty | Add `itemReason` |
+| `EXCEEDS_ORDERED_QUANTITY` | Receive too much | Check remaining PO qty |
+| `INVOICE_IN_USE` | Duplicate invoice number | Use a new number |
+| `ITEM_NOT_ON_INVOICE` | Return item mismatch | Use exact sales invoice lines |
+| `EXCEEDS_SOLD_QUANTITY` | Return too much | Check prior returns |
+| `BATCH_NOT_FROM_WAREHOUSE` | Pharmacy return invalid | Only return supply-received stock |
+| `BATCH_NOT_FROM_SUPPLIER` | Supplier return invalid | Use purchased batch |
+| `USE_PRICE_ENDPOINT` | Wrong price update path | Use `/drugs/:id/selling-price` |
+| `DISCOUNT_FORBIDDEN` | No discount permission | Remove discount or use manager |
+| `RATE_LIMITED` | Too many requests | Wait and retry |
 
 ---
 
-### Permissions
+## INSTRUCTIONS FOR POSTMAN AI
 
-- notifications read/update: all authenticated users (own notifications only)
-- run alerts + audit logs read: pharmacy manager, warehouse manager, pharmacy admin, system admin
+Build a Postman collection from this file with:
+
+1. Collection name: **Pharmacy Management System**
+2. Variable `baseUrl` = `http://localhost:3000`
+3. Folder order matching phases **A → H**
+4. Request names exactly as listed in the MASTER flow tables
+5. Bodies exactly as shown (with `{{variables}}`)
+6. After each create response, document which `id` to save
+7. Enable cookie jar / credentials
+8. Include a README folder note with login:
+   - email: `admin@example.com`
+   - password: `Admin12345`
+9. Do not invent endpoints not listed here
+10. Prefer the MASTER END-TO-END TEST FLOW as the primary documentation path

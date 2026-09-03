@@ -70,6 +70,8 @@ test("pharmacist cannot manage users", () => {
     hasPermission(ROLES.WAREHOUSE_MANAGER, PERMISSIONS.INVENTORY_ADJUSTMENTS_CREATE),
     true,
   );
+  assert.equal(hasPermission(ROLES.PHARMACY_MANAGER, PERMISSIONS.REPORTS_READ), true);
+  assert.equal(hasPermission(ROLES.PHARMACIST, PERMISSIONS.REPORTS_READ), false);
 });
 
 test("authorize rejects missing permission", () => {

@@ -30,6 +30,10 @@ export const drugIdParamSchema = Joi.object({
   id: objectId.required(),
 });
 
+export const activeIngredientIdParamSchema = Joi.object({
+  activeIngredientId: objectId.required(),
+});
+
 export const listDrugsQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(20),
