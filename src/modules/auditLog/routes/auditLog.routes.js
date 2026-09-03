@@ -6,6 +6,7 @@ import { validate } from "../../../middlewares/validate.js";
 import * as auditLogController from "../controllers/auditLog.controller.js";
 import {
   auditLogIdParamSchema,
+  exportAuditLogsQuerySchema,
   listAuditLogsQuerySchema,
 } from "../validations/auditLog.validation.js";
 
@@ -18,6 +19,13 @@ router.get(
   authorize(PERMISSIONS.AUDIT_LOGS_READ),
   validate(listAuditLogsQuerySchema, "query"),
   auditLogController.listAuditLogs,
+);
+
+router.get(
+  "/export",
+  authorize(PERMISSIONS.AUDIT_LOGS_READ),
+  validate(exportAuditLogsQuerySchema, "query"),
+  auditLogController.exportAuditLogs,
 );
 
 router.get(

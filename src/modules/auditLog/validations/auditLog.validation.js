@@ -11,6 +11,13 @@ export const listAuditLogsQuerySchema = Joi.object({
   entityId: Joi.string().trim().max(80),
 });
 
+export const exportAuditLogsQuerySchema = Joi.object({
+  action: Joi.string().trim().max(100),
+  userId: objectId,
+  entityType: Joi.string().trim().max(80),
+  entityId: Joi.string().trim().max(80),
+});
+
 export const auditLogIdParamSchema = Joi.object({
   id: objectId.required(),
 });

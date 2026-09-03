@@ -11,6 +11,17 @@ const managerRoles = new Set([
   ROLES.WAREHOUSE_MANAGER,
 ]);
 
+const buildAuditLogFilter = ({ action, userId, entityType, entityId }) => {
+  const filter = {};
+
+  if (action) filter.action = action;
+  if (userId) filter.userId = userId;
+  if (entityType) filter.entityType = entityType;
+  if (entityId) filter.entityId = entityId;
+
+  return filter;
+};
+
 export const assertCanReadAuditLogs = (actor) => {
   if (!managerRoles.has(actor.role)) {
     throw new AppError("You cannot access audit logs.", 403, "FORBIDDEN");
@@ -22,13 +33,7 @@ export const listAuditLogs = async (
   { page, limit, action, userId, entityType, entityId },
 ) => {
   assertCanReadAuditLogs(actor);
-
-  const filter = {};
-
-  if (action) filter.action = action;
-  if (userId) filter.userId = userId;
-  if (entityType) filter.entityType = entityType;
-  if (entityId) filter.entityId = entityId;
+  const filter = buildAuditLogFilter({ action, userId, entityType, entityId });
 
   const skip = (page - 1) * limit;
   const [items, total] = await Promise.all([
@@ -37,6 +42,13 @@ export const listAuditLogs = async (
   ]);
 
   return { items: items.map(toPublic), page, limit, total };
+};
+
+export const exportAuditLogs = async (actor, filters) => {
+  assertCanReadAuditLogs(actor);
+
+  const items = await auditLogRepository.exportAuditLogs(buildAuditLogFilter(filters));
+  return items.map(toPublic);
 };
 
 export const getAuditLogById = async (actor, id) => {

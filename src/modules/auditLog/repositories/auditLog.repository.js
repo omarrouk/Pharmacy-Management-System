@@ -13,4 +13,7 @@ export const findAuditLogById = (id) => AuditLog.findById(id);
 export const listAuditLogs = ({ filter = {}, skip = 0, limit = 20 } = {}) =>
   AuditLog.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit);
 
+export const exportAuditLogs = (filter = {}) =>
+  AuditLog.find(filter).sort({ createdAt: -1 });
+
 export const countAuditLogs = (filter = {}) => AuditLog.countDocuments(filter);

@@ -1370,9 +1370,10 @@ Postman folder: **Audit Logs**
 | Postman request name | Method | URL |
 |---|---|---|
 | List audit logs | `GET` | `/api/v1/audit-logs` |
+| Export audit logs to Excel | `GET` | `/api/v1/audit-logs/export` |
 | Get audit log by ID | `GET` | `/api/v1/audit-logs/LOG_ID` |
 
-Filters: `?action=auth.login` · `?userId=...` · `?entityType=SalesInvoice` · `?entityId=...`
+Filters: `?action=auth.login` · `?userId=...` · `?entityType=SalesInvoice` · `?entityId=...` (the Excel export supports these same filters and exports every matching log)
 
 Read-only. Logs auto-delete after **90 days** (MongoDB TTL).
 
